@@ -1,0 +1,28 @@
+stop_id,stop_name,stop_lat,stop_lon,location_type,parent_station
+P_VALERA,Parada Valera-Escuque (Valera),9.312756,-70.611262,,
+P_ESCUQUE,Parada Escuque-Valera (Escuque),9.295932,-70.670822,,
+T_GUANARE,Terminal de Pasajeros de Guanare,9.026222,-69.736546,,
+T_CARACAS,Terminal de Pasajeros La Bandera (Caracas),10.476213,-66.899044,,
+P_CABRES,Cabrestrero (Guanare),9.033715,-69.767703,,
+P_BISCUCUY,Plaza Bolívar de Biscucuy,9.358734,-69.982779,,
+T_VALERA,Terminal de Pasajeros de Valera,9.320137,-70.597900,,
+T_MARACAIBO,Terminal de Pasajeros de Maracaibo,10.635511,-71.619072,,
+T_BOCONO,Terminal de Pasajeros de Boconó,9.2379945,-70.2764009,,
+T_BISCUCUY,Terminal de Pasajeros de Biscucuy,9.3539744,-69.9876023,,
+T_BARQUISIMETO,Terminal de Pasajeros de Barquisimeto,10.0689898,-69.3351438,,
+S_VAN,Estación Altos de La Vanega,10.616111,-71.668333,1,
+S_VAN_A1,Estación Altos de La Vanega (Sentido Libertador),10.616121,-71.668323,0,S_VAN
+S_VAR,Estación El Varillal,10.623761,-71.659134,1,
+S_VAR_A1,Estación El Varillal (Sentido Libertador),10.623771,-71.659124,0,S_VAR
+S_VAR_A2,Estación El Varillal (Sentido A. Vanega),10.623781,-71.659144,0,S_VAR
+S_GUA,Estación El Guayabal,10.626347,-71.649450,1,
+S_GUA_A1,Estación El Guayabal (Sentido Libertador),10.626347,-71.649450,0,S_GUA
+S_GUA_A2,Estación El Guayabal (Sentido A. Vanega),10.626347,-71.649450,0,S_GUA
+S_SAB,Estación Sabaneta,10.629994,-71.640042,1,
+S_SAB_A1,Estación Sabaneta (Sentido Libertador),10.630004,-71.640032,0,S_SAB
+S_SAB_A2,Estación Sabaneta (Sentido A. Vanega),10.630014,-71.640052,0,S_SAB
+S_URD,Estación Urdaneta,10.635556,-71.630278,1,
+S_URD_A1,Estación Urdaneta (Sentido Libertador),10.635566,-71.630268,0,S_URD
+S_URD_A2,Estación Urdaneta (Sentido A. Vanega),10.635576,-71.630288,0,S_URD
+S_LIB,Estación Libertador,10.639167,-71.621389,1,
+S_LIB_A1,Estación Libertador (Sentido A. Vanega),10.639177,-71.621379,0,S_LIB

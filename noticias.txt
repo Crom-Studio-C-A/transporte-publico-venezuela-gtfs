@@ -1,0 +1,4 @@
+noticia_id,fecha_publicacion,tipo,titulo,descripcion,route_id,trip_headsign
+1,2025-11-13 16:00,INFO,Bienvenidos al nuevo servicio de horarios,Estamos felices de lanzar esta nueva plataforma para usted.,,
+4,2025-11-14 09:00,INFO,Servicio de fin de semana,Recuerde que los fines de semana el servicio opera con horario reducido.,L-CUATRI,
+5,2025-11-14 09:00,INFO,NO ADMITE PASAJEROS AL LLEGAR,Para ambos sentidos el transporte toma aproximadamente 6 horas. NO ADMITE PASAJEROS,CCS-GRE,
