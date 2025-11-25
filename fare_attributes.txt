@@ -1,0 +1,4 @@
+fare_id,price,currency_type,payment_method,transfers,agency_id,transfer_duration
+F_LC_90,90.00,VES,0,0,LC,
+F_CCS_17,17.00,USD,1,0,sitssa,
+F_METRO_15,15.00,VES,1,0,METRO-MCBO,
