@@ -358,8 +358,11 @@
                     <div class="pill" data-cat="Religioso">Religioso</div>
                     <div class="pill" data-cat="Parque">Parques</div>
                     <div class="pill" data-cat="Histórico">Histórico</div>
-                    <div class="pill" data-cat="Monumento">Monumentos</div>
-                    <div class="pill" data-cat="Ciudad">Ciudad</div>
+                    <div class="pill" data-cat="Cultural">Cultural</div>
+                    <div class="pill" data-cat="Naturaleza">Naturaleza</div>
+                    <div class="pill" data-cat="Urbano">Urbano</div>
+                    <div class="pill" data-cat="Monumento">Monumento</div>
+                    <div class="pill" data-cat="Arquitectura">Arquitectura</div>
                 </div>
             </div>
             
@@ -376,41 +379,53 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             
-            // --- CONFIGURACIÓN ---
+            // --- 1. CONFIGURACIÓN ---
             // IMPORTANTE: Apuntar al dominio principal donde están los archivos GTFS
             const gtfsBaseUrl = "https://transporte.cromstudio.com.ve/"; 
-            const googleMapsApiKey = "AIzaSyCxQnqhHh_H7IGHH5p5bow2Bz8iPIIqRww"; // Reemplaza con tu Key real si cambia
+            const googleMapsApiKey = "AIzaSyCxQnqhHh_H7IGHH5p5bow2Bz8iPIIqRww"; // API Key
 
-            // --- BASE DE DATOS TURÍSTICA (Expandida) ---
+            // --- 2. BASE DE DATOS TURÍSTICA (Expandida) ---
             const dbTurismo = [
-                // ZULIA
-                { id: 1, name: "Basílica de Chiquinquirá", city: "Maracaibo", state: "Zulia", cat: "Religioso", lat: 10.6430, lon: -71.6112, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Bas%C3%ADlica_de_Nuestra_Se%C3%B1ora_de_Chiquinquir%C3%A1_Maracaibo.jpg/640px-Bas%C3%ADlica_de_Nuestra_Se%C3%B1ora_de_Chiquinquir%C3%A1_Maracaibo.jpg", desc: "El hogar de La Chinita, patrona del Zulia. Un templo lleno de fe e historia en el corazón de Maracaibo." },
-                { id: 2, name: "Vereda del Lago", city: "Maracaibo", state: "Zulia", cat: "Parque", lat: 10.6625, lon: -71.5997, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Vereda_del_lago.jpg/640px-Vereda_del_lago.jpg", desc: "El parque más grande de la ciudad, ideal para caminar, hacer deporte y ver el Puente sobre el Lago." },
-                { id: 3, name: "Puente Rafael Urdaneta", city: "Maracaibo", state: "Zulia", cat: "Monumento", lat: 10.5743, lon: -71.5733, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Puente_General_Rafael_Urdaneta.jpg/640px-Puente_General_Rafael_Urdaneta.jpg", desc: "Una de las maravillas de la ingeniería venezolana, conectando las dos orillas del lago." },
-                { id: 4, name: "Calle Carabobo", city: "Maracaibo", state: "Zulia", cat: "Histórico", lat: 10.6450, lon: -71.6080, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Calle_Carabobo_Maracaibo.jpg/640px-Calle_Carabobo_Maracaibo.jpg", desc: "La zona más colorida de Maracaibo, conservando la arquitectura colonial típica de la región." },
+                // --- ZULIA (Maracaibo) ---
+                { id: 1, name: "Basílica de Chiquinquirá", city: "Maracaibo", state: "Zulia", cat: "Religioso", lat: 10.6430, lon: -71.6112, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Bas%C3%ADlica_de_Nuestra_Se%C3%B1ora_de_Chiquinquir%C3%A1_Maracaibo.jpg/640px-Bas%C3%ADlica_de_Nuestra_Se%C3%B1ora_de_Chiquinquir%C3%A1_Maracaibo.jpg", desc: "El corazón espiritual de Maracaibo. Visita a La Chinita en el centro de la ciudad." },
+                { id: 2, name: "Vereda del Lago", city: "Maracaibo", state: "Zulia", cat: "Parque", lat: 10.6625, lon: -71.5997, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Vereda_del_lago.jpg/640px-Vereda_del_lago.jpg", desc: "El parque metropolitano más grande de la ciudad con vistas al Puente sobre el Lago." },
+                { id: 3, name: "Puente Rafael Urdaneta", city: "Maracaibo", state: "Zulia", cat: "Monumento", lat: 10.5743, lon: -71.5733, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Puente_General_Rafael_Urdaneta.jpg/640px-Puente_General_Rafael_Urdaneta.jpg", desc: "Imponente obra de ingeniería que conecta Maracaibo con el resto del país." },
+                { id: 4, name: "Calle Carabobo", city: "Maracaibo", state: "Zulia", cat: "Histórico", lat: 10.6450, lon: -71.6080, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Calle_Carabobo_Maracaibo.jpg/640px-Calle_Carabobo_Maracaibo.jpg", desc: "Zona colonial con casas de colores vibrantes, típica de la arquitectura marabina." },
+                { id: 5, name: "Teatro Baralt", city: "Maracaibo", state: "Zulia", cat: "Cultural", lat: 10.6440, lon: -71.6100, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Teatro_Baralt.jpg/640px-Teatro_Baralt.jpg", desc: "Joya arquitectónica donde se proyectó cine por primera vez en Venezuela." },
                 
-                // LARA
-                { id: 10, name: "Catedral de Barquisimeto", city: "Barquisimeto", state: "Lara", cat: "Arquitectura", lat: 10.0653, lon: -69.3158, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Catedral_de_Barquisimeto_II.jpg/640px-Catedral_de_Barquisimeto_II.jpg", desc: "Famosa por su forma de paraboloide hiperbólico, una joya de la arquitectura moderna." },
-                { id: 11, name: "Manto de María", city: "Barquisimeto", state: "Lara", cat: "Religioso", lat: 10.0750, lon: -69.2800, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Manto_de_Maria_Divina_Pastora.jpg/640px-Manto_de_Maria_Divina_Pastora.jpg", desc: "El monumento mariano más alto del mundo. Ofrece vistas espectaculares de la ciudad." },
-                { id: 12, name: "Obelisco de Barquisimeto", city: "Barquisimeto", state: "Lara", cat: "Monumento", lat: 10.0670, lon: -69.3500, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Obelisco_de_Barquisimeto_2014.jpg/640px-Obelisco_de_Barquisimeto_2014.jpg", desc: "Símbolo icónico de la ciudad crepuscular, visible desde gran parte de la ciudad." },
-                { id: 13, name: "Flor de Venezuela", city: "Barquisimeto", state: "Lara", cat: "Arquitectura", lat: 10.0690, lon: -69.2900, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Flor_de_Venezuela.jpg/640px-Flor_de_Venezuela.jpg", desc: "Diseñada por Fruto Vivas, sus pétalos se abren y cierran. Un hito arquitectónico." },
+                // --- LARA (Barquisimeto) ---
+                { id: 10, name: "Catedral de Barquisimeto", city: "Barquisimeto", state: "Lara", cat: "Arquitectura", lat: 10.0653, lon: -69.3158, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Catedral_de_Barquisimeto_II.jpg/640px-Catedral_de_Barquisimeto_II.jpg", desc: "Una joya de la ingeniería moderna con forma de paraboloide hiperbólico." },
+                { id: 11, name: "Manto de María", city: "Barquisimeto", state: "Lara", cat: "Religioso", lat: 10.0750, lon: -69.2800, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Manto_de_Maria_Divina_Pastora.jpg/640px-Manto_de_Maria_Divina_Pastora.jpg", desc: "El monumento mariano más alto del mundo. Vista espectacular de la ciudad." },
+                { id: 12, name: "Obelisco de Barquisimeto", city: "Barquisimeto", state: "Lara", cat: "Monumento", lat: 10.0670, lon: -69.3500, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Obelisco_de_Barquisimeto_2014.jpg/640px-Obelisco_de_Barquisimeto_2014.jpg", desc: "Símbolo de la ciudad crepuscular, cuenta con un mirador en la cima." },
+                { id: 13, name: "Flor de Venezuela", city: "Barquisimeto", state: "Lara", cat: "Arquitectura", lat: 10.0690, lon: -69.2900, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Flor_de_Venezuela.jpg/640px-Flor_de_Venezuela.jpg", desc: "Estructura diseñada por Fruto Vivas que abre sus pétalos." },
 
-                // PORTUGUESA
-                { id: 20, name: "Santuario de la Coromoto", city: "Guanare", state: "Portuguesa", cat: "Religioso", lat: 9.0744, lon: -69.7669, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Santuario_Nacional_Nuestra_Se%C3%B1ora_de_Coromoto.jpg/640px-Santuario_Nacional_Nuestra_Se%C3%B1ora_de_Coromoto.jpg", desc: "Basílica menor construida en el sitio de la aparición de la patrona de Venezuela." },
-                { id: 21, name: "Río Guanare", city: "Guanare", state: "Portuguesa", cat: "Naturaleza", lat: 9.0400, lon: -69.7500, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Rio_Guanare.jpg/640px-Rio_Guanare.jpg", desc: "Balnearios naturales perfectos para refrescarse en los llanos venezolanos." },
+                // --- PORTUGUESA (Guanare) ---
+                { id: 20, name: "Santuario de la Coromoto", city: "Guanare", state: "Portuguesa", cat: "Religioso", lat: 9.0744, lon: -69.7669, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Santuario_Nacional_Nuestra_Se%C3%B1ora_de_Coromoto.jpg/640px-Santuario_Nacional_Nuestra_Se%C3%B1ora_de_Coromoto.jpg", desc: "Lugar de aparición de la patrona de Venezuela. Impresionante arquitectura." },
+                { id: 21, name: "Río Guanare", city: "Guanare", state: "Portuguesa", cat: "Naturaleza", lat: 9.0400, lon: -69.7500, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Rio_Guanare.jpg/640px-Rio_Guanare.jpg", desc: "Balnearios naturales ideales para el esparcimiento." },
 
-                // TRUJILLO
-                { id: 30, name: "Monumento a la Paz", city: "Trujillo", state: "Trujillo", cat: "Monumento", lat: 9.3494, lon: -70.4531, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Monumento_a_la_Paz_Trujillo_Venezuela.jpg/640px-Monumento_a_la_Paz_Trujillo_Venezuela.jpg", desc: "La estatua habitable más alta de América. Ubicada en la Peña de la Virgen." },
+                // --- TRUJILLO (Valera/Boconó) ---
+                { id: 30, name: "Monumento a la Paz", city: "Trujillo", state: "Trujillo", cat: "Monumento", lat: 9.3494, lon: -70.4531, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Monumento_a_la_Paz_Trujillo_Venezuela.jpg/640px-Monumento_a_la_Paz_Trujillo_Venezuela.jpg", desc: "La estatua habitable más alta de América. Vistas panorámicas increíbles." },
+                { id: 31, name: "Laguna de los Cedros", city: "Boconó", state: "Trujillo", cat: "Naturaleza", lat: 9.2200, lon: -70.2500, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Laguna_de_los_Cedros.jpg/640px-Laguna_de_los_Cedros.jpg", desc: "Hermosa laguna de montaña dentro del Parque Nacional Guaramacal." },
                 { id: 32, name: "Santuario Dr. José Gregorio", city: "Isnotú", state: "Trujillo", cat: "Religioso", lat: 9.3600, lon: -70.7000, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Santuario_Jose_Gregorio_Hernandez.jpg/640px-Santuario_Jose_Gregorio_Hernandez.jpg", desc: "Lugar de nacimiento del 'Médico de los Pobres', sitio de peregrinación y fe." },
-                { id: 33, name: "Iglesia San Juan Bautista", city: "Valera", state: "Trujillo", cat: "Arquitectura", lat: 9.3200, lon: -70.6000, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Iglesia_San_Juan_Bautista_Valera.jpg/640px-Iglesia_San_Juan_Bautista_Valera.jpg", desc: "Imponente templo neogótico en el centro de la ciudad comercial de Trujillo." },
+                { id: 33, name: "Iglesia San Juan Bautista", city: "Valera", state: "Trujillo", cat: "Arquitectura", lat: 9.3200, lon: -70.6000, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Iglesia_San_Juan_Bautista_Valera.jpg/640px-Iglesia_San_Juan_Bautista_Valera.jpg", desc: "Templo neogótico icónico en el centro de Valera." },
 
-                // CARACAS
-                { id: 40, name: "Waraira Repano (Ávila)", city: "Caracas", state: "Distrito Capital", cat: "Montaña", lat: 10.5300, lon: -66.8800, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Avila_Caracas.jpg/640px-Avila_Caracas.jpg", desc: "La majestuosa montaña que separa a Caracas del mar. Acceso por teleférico." },
-                { id: 41, name: "Panteón Nacional", city: "Caracas", state: "Distrito Capital", cat: "Histórico", lat: 10.5130, lon: -66.9100, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Pante%C3%B3n_Nacional_de_Venezuela_2012.jpg/640px-Pante%C3%B3n_Nacional_de_Venezuela_2012.jpg", desc: "El altar de la patria, donde reposan los restos de Simón Bolívar." },
-                { id: 42, name: "Parque Los Caobos", city: "Caracas", state: "Distrito Capital", cat: "Parque", lat: 10.4986, lon: -66.8953, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Parque_Los_Caobos_Caracas_Venezuela.jpg/640px-Parque_Los_Caobos_Caracas_Venezuela.jpg", desc: "Oasis verde con árboles centenarios en el centro cultural de Caracas." }
+                // --- CARACAS ---
+                { id: 40, name: "Waraira Repano (Ávila)", city: "Caracas", state: "Distrito Capital", cat: "Montaña", lat: 10.5300, lon: -66.8800, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Avila_Caracas.jpg/640px-Avila_Caracas.jpg", desc: "El pulmón vegetal de Caracas. Sube en teleférico o a pie." },
+                { id: 41, name: "Panteón Nacional", city: "Caracas", state: "Distrito Capital", cat: "Histórico", lat: 10.5130, lon: -66.9100, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Pante%C3%B3n_Nacional_de_Venezuela_2012.jpg/640px-Pante%C3%B3n_Nacional_de_Venezuela_2012.jpg", desc: "Mausoleo donde reposan los restos de Simón Bolívar y otros próceres." },
+                { id: 42, name: "Parque Los Caobos", city: "Caracas", state: "Distrito Capital", cat: "Parque", lat: 10.4986, lon: -66.8953, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Parque_Los_Caobos_Caracas_Venezuela.jpg/640px-Parque_Los_Caobos_Caracas_Venezuela.jpg", desc: "Uno de los parques más antiguos de Caracas, cerca de Plaza Venezuela." },
+                { id: 43, name: "Plaza Venezuela", city: "Caracas", state: "Distrito Capital", cat: "Urbano", lat: 10.4960, lon: -66.8800, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Plaza_Venezuela_de_noche.jpg/640px-Plaza_Venezuela_de_noche.jpg", desc: "Centro neurálgico de la ciudad con su famosa fuente iluminada." },
+                { id: 44, name: "Paseo Los Próceres", city: "Caracas", state: "Distrito Capital", cat: "Monumento", lat: 10.4700, lon: -66.9000, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Paseo_Los_Proceres.jpg/640px-Paseo_Los_Proceres.jpg", desc: "Monumental paseo dedicado a los héroes de la independencia." },
+                
+                // --- MÉRIDA ---
+                { id: 50, name: "Teleférico Mukumbarí", city: "Mérida", state: "Mérida", cat: "Montaña", lat: 8.5970, lon: -71.1430, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Telef%C3%A9rico_de_M%C3%A9rida_Mukumbar%C3%AD.jpg/640px-Telef%C3%A9rico_de_M%C3%A9rida_Mukumbar%C3%AD.jpg", desc: "El teleférico más alto y largo del mundo, puerta de entrada a los picos nevados." },
+                { id: 51, name: "Laguna de Mucubají", city: "Apartaderos", state: "Mérida", cat: "Naturaleza", lat: 8.7980, lon: -70.8300, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Laguna_Mucubaj%C3%AD.jpg/640px-Laguna_Mucubaj%C3%AD.jpg", desc: "Impresionante laguna de origen glacial en el páramo merideño." },
+                
+                // --- FALCÓN ---
+                { id: 60, name: "Médanos de Coro", city: "Coro", state: "Falcón", cat: "Naturaleza", lat: 11.4200, lon: -69.6800, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/M%C3%A9danos_de_Coro_National_Park.jpg/640px-M%C3%A9danos_de_Coro_National_Park.jpg", desc: "Parque nacional desértico con dunas gigantes que cambian constantemente." },
+                { id: 61, name: "Cayo Sombrero", city: "Chichiriviche", state: "Falcón", cat: "Playa", lat: 10.8800, lon: -68.2300, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Cayo_Sombrero_Morrocoy.jpg/640px-Cayo_Sombrero_Morrocoy.jpg", desc: "Una de las playas más famosas y hermosas del Parque Nacional Morrocoy." }
             ];
 
-            // --- VARIABLES DE ESTADO ---
+            // --- 3. VARIABLES DE ESTADO ---
             let gtfsStops = [];
             let gtfsRoutes = new Map();
             let gtfsTarifas = new Map();
@@ -419,29 +434,27 @@
             let map = null;
             let touristMarkers = [];
 
-            // --- INICIALIZACIÓN ---
+            // --- 4. INICIALIZACIÓN ---
             async function init() {
                 initMap();
                 await loadGTFSData();
                 
-                // Comprobar si hay un sitio en la URL (SEO Dinámico)
+                // SEO DINÁMICO: Detectar slug en URL
                 const urlParams = new URLSearchParams(window.location.search);
-                const sitioId = parseInt(urlParams.get('sitio'));
+                const lugarSlug = urlParams.get('lugar');
                 
                 renderPlaces(dbTurismo);
                 generateJsonLd();
 
-                // Si hay ID en URL, destacar ese sitio
-                if (sitioId) {
-                    const place = dbTurismo.find(p => p.id === sitioId);
+                if (lugarSlug) {
+                    // Buscar por nombre normalizado (slug)
+                    const place = dbTurismo.find(p => normalizeSlug(p.name) === lugarSlug);
                     if (place) {
-                        // Actualizar SEO del documento
                         document.title = `${place.name} - Turismo Venezuela`;
                         document.querySelector('meta[name="description"]').setAttribute("content", `Visita ${place.name} en ${place.city}. Descubre cómo llegar en transporte público con Crom Studio.`);
                         
-                        // Hacer scroll y abrir
                         setTimeout(() => {
-                            const card = document.getElementById(`card-${sitioId}`);
+                            const card = document.getElementById(`card-${place.id}`);
                             if (card) {
                                 card.scrollIntoView({behavior: "smooth", block: "center"});
                                 card.click();
@@ -450,12 +463,24 @@
                     }
                 }
             }
+            
+            function normalizeSlug(text) {
+                return text.toLowerCase()
+                    .replace(/[áàäâ]/g, 'a')
+                    .replace(/[éèëê]/g, 'e')
+                    .replace(/[íìïî]/g, 'i')
+                    .replace(/[óòöô]/g, 'o')
+                    .replace(/[úùüû]/g, 'u')
+                    .replace(/[ñ]/g, 'n')
+                    .replace(/[^a-z0-9\- ]/g, '')
+                    .replace(/\s+/g, '-');
+            }
 
-            // --- MAPA LEAFLET ---
+            // --- 5. MAPA LEAFLET ---
             function initMap() {
                 map = L.map('map').setView([9.5, -69.0], 6);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap'
+                    attribution: '&copy; OpenStreetMap contributors'
                 }).addTo(map);
             }
 
@@ -467,8 +492,14 @@
                 popupAnchor: [1, -34],
                 shadowSize: [41, 41]
             });
+            const iconBus = L.divIcon({
+                className: 'custom-div-icon',
+                html: "<div style='background-color:#0d6efd;width:10px;height:10px;border-radius:50%;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.2);'></div>",
+                iconSize: [10, 10],
+                iconAnchor: [5, 5]
+            });
 
-            // --- CARGA DE DATOS GTFS ---
+            // --- 6. CARGA GTFS ---
             async function loadGTFSData() {
                 try {
                     const parseFile = (file) => new Promise((resolve) => {
@@ -478,110 +509,82 @@
                         });
                     });
 
-                    // Cargar archivos necesarios para enrutamiento básico
                     const [stops, routes, trips, stopTimes, tarifas] = await Promise.all([
-                        parseFile("stops.txt"),
-                        parseFile("routes.txt"),
-                        parseFile("trips.txt"),
-                        parseFile("stop_times.txt"),
-                        parseFile("tarifas.txt")
+                        parseFile("stops.txt"), parseFile("routes.txt"), parseFile("trips.txt"), parseFile("stop_times.txt"), parseFile("tarifas.txt")
                     ]);
 
-                    // Procesar Paradas
                     gtfsStops = stops.filter(s => s.stop_lat && s.stop_lon);
-                    
-                    // Procesar Rutas y Tarifas
                     routes.forEach(r => gtfsRoutes.set(r.route_id, r));
                     tarifas.forEach(t => gtfsTarifas.set(t.route_id, t));
                     trips.forEach(t => gtfsTrips.set(t.trip_id, t));
 
-                    // Indexar Rutas por Parada (Optimización)
                     stopTimes.forEach(st => {
                         const trip = gtfsTrips.get(st.trip_id);
                         if (trip) {
-                            if (!gtfsStopTimesPorParada.has(st.stop_id)) {
-                                gtfsStopTimesPorParada.set(st.stop_id, new Set());
-                            }
+                            if (!gtfsStopTimesPorParada.has(st.stop_id)) gtfsStopTimesPorParada.set(st.stop_id, new Set());
                             gtfsStopTimesPorParada.get(st.stop_id).add(trip.route_id);
                         }
                     });
 
-                    console.log("GTFS Cargado y listo para turismo.");
+                    // Dibujar paradas
+                    gtfsStops.forEach(stop => {
+                        if (stop.location_type !== '0') {
+                            L.marker([stop.stop_lat, stop.stop_lon], {icon: iconBus})
+                             .addTo(map).bindPopup(`<b>🚏 ${stop.stop_name}</b>`);
+                        }
+                    });
 
-                } catch (e) {
-                    console.error("Error cargando GTFS:", e);
-                }
+                    console.log("GTFS Cargado: Sistema de enrutamiento listo.");
+
+                } catch (e) { console.warn("Error cargando GTFS", e); }
             }
 
-            // --- RENDERIZADO ---
+            // --- 7. RENDERIZADO ---
             function renderPlaces(list) {
                 const container = document.getElementById('places-list');
                 container.innerHTML = '';
-
-                // Limpiar mapa
                 touristMarkers.forEach(m => map.removeLayer(m));
                 touristMarkers = [];
 
-                if (list.length === 0) {
-                    container.innerHTML = '<p style="text-align:center;color:#888;margin-top:20px;">No se encontraron destinos.</p>';
-                    return;
-                }
+                if (list.length === 0) { container.innerHTML = '<p style="text-align:center;color:#888;margin-top:20px;">No se encontraron destinos.</p>'; return; }
 
                 list.forEach(place => {
-                    // Crear Marcador
-                    const marker = L.marker([place.lat, place.lon], {icon: iconTurismo})
-                        .addTo(map)
-                        .bindPopup(`<b>${place.name}</b><br>${place.cat}`);
-                    
-                    marker.on('click', () => {
-                        document.getElementById(`card-${place.id}`).scrollIntoView({behavior: "smooth", block: "center"});
-                        highlightCard(`card-${place.id}`);
-                    });
+                    const marker = L.marker([place.lat, place.lon], {icon: iconTurismo}).addTo(map).bindPopup(`<b>${place.name}</b><br>${place.cat}`);
+                    marker.on('click', () => { document.getElementById(`card-${place.id}`).scrollIntoView({behavior: "smooth", block: "center"}); highlightCard(`card-${place.id}`); });
                     touristMarkers.push(marker);
 
-                    // Crear Tarjeta
                     const card = document.createElement('div');
                     card.className = 'place-card';
                     card.id = `card-${place.id}`;
-                    
-                    // Generar enlace de Booking para este destino
                     const bookingLink = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(place.city + ", Venezuela")}`;
 
                     card.innerHTML = `
                         <div class="place-img" style="background-image: url('${place.img}');">
-                            <div class="place-badges">
-                                <span class="badge">${place.cat}</span>
-                            </div>
+                            <div class="place-badges"><span class="badge">${place.cat}</span></div>
                         </div>
                         <div class="place-info">
                             <div class="place-meta">📍 ${place.city}, ${place.state}</div>
                             <h3 class="place-title">${place.name}</h3>
                             <p class="place-desc">${place.desc}</p>
-                            
                             <div class="card-actions">
-                                <button class="action-btn btn-route" onclick="calcularRuta(${place.id}, ${place.lat}, ${place.lon})">
-                                    <span>🗺️</span> Cómo llegar
-                                </button>
-                                <a href="${bookingLink}" target="_blank" class="action-btn btn-hotel" style="text-decoration:none;">
-                                    <span>🏨</span> Hoteles
-                                </a>
+                                <button class="action-btn btn-route" onclick="calcularRuta(${place.id}, ${place.lat}, ${place.lon})"><span>🗺️</span> Cómo llegar</button>
+                                <a href="${bookingLink}" target="_blank" class="action-btn btn-hotel" style="text-decoration:none;"><span>🏨</span> Hoteles</a>
                             </div>
                             <div class="trip-result" id="trip-${place.id}"></div>
                         </div>
                     `;
                     
-                    // Click en tarjeta -> Mover mapa
                     card.addEventListener('click', (e) => {
                         if (['BUTTON', 'A'].includes(e.target.tagName) || e.target.closest('button') || e.target.closest('a')) return;
-                        map.setView([place.lat, place.lon], 14);
+                        map.setView([place.lat, place.lon], 15);
                         marker.openPopup();
                         highlightCard(card.id);
-                        // Actualizar URL para SEO sin recargar
-                        const newUrl = `${window.location.pathname}?sitio=${place.id}`;
+                        // Actualizar URL Amigable
+                        const slug = normalizeSlug(place.name);
+                        const newUrl = `?lugar=${slug}`;
                         window.history.pushState({path: newUrl}, '', newUrl);
                         document.title = `${place.name} - Turismo Venezuela`;
                     });
-
                     container.appendChild(card);
                 });
             }
@@ -592,178 +595,83 @@
                 if(card) card.classList.add('active');
             }
 
-            // --- ALGORITMO DE RUTAS TURÍSTICAS ---
+            // --- 8. ENRUTAMIENTO ---
             window.calcularRuta = function(id, destLat, destLon) {
                 const resultDiv = document.getElementById(`trip-${id}`);
                 resultDiv.innerHTML = '<p style="color:#666;">📡 Buscando tu ubicación...</p>';
                 resultDiv.classList.add('visible');
 
-                if (!navigator.geolocation) {
-                    resultDiv.innerHTML = '<p style="color:red;">Geolocalización no soportada.</p>';
-                    return;
-                }
+                if (!navigator.geolocation) { resultDiv.innerHTML = '<p style="color:red;">Geolocalización no soportada.</p>'; return; }
 
-                navigator.geolocation.getCurrentPosition(async pos => {
+                navigator.geolocation.getCurrentPosition(pos => {
                     const userLat = pos.coords.latitude;
                     const userLon = pos.coords.longitude;
-
-                    // 1. Encontrar paradas
                     const origen = findNearestStop(userLat, userLon);
                     const destino = findNearestStop(destLat, destLon);
 
-                    if (!origen || !destino) {
-                        resultDiv.innerHTML = '<p style="color:red;">No hay transporte público registrado cerca.</p>';
-                        return;
-                    }
-                    
-                    // 2. Buscar Ruta Directa entre esas paradas
-                    // (Usamos la lógica simplificada de buscar rutas que pasen por ambas)
+                    if (!origen || !destino) { resultDiv.innerHTML = '<p style="color:red;">No hay transporte público registrado cerca.</p>'; return; }
+
                     const rutasOrigen = getRoutesAtStop(origen.stop.stop_id);
                     const rutasDestino = getRoutesAtStop(destino.stop.stop_id);
-                    
-                    // Intersección: Rutas que pasan por ambas paradas (o sus padres)
                     const rutasComunes = rutasOrigen.filter(r1 => rutasDestino.some(r2 => r1.route_id === r2.route_id));
                     
                     const distTotal = getDistance(userLat, userLon, destLat, destLon).toFixed(1);
-                    const distCaminar = (origen.dist + destino.dist).toFixed(2);
-
-                    let rutaHtml = '';
-                    let precioHtml = '';
+                    const caminarInicio = origen.dist.toFixed(2);
+                    const caminarFin = destino.dist.toFixed(2);
+                    let rutaHtml = '', precioHtml = '';
 
                     if (rutasComunes.length > 0) {
-                        const ruta = rutasComunes[0]; // Tomar la primera opción
-                        const tarifaData = gtfsTarifas.get(ruta.route_id);
-                        const precio = tarifaData ? `${tarifaData.tarifa_num} ${tarifaData.tipo_moneda}` : 'Consultar';
+                        const ruta = rutasComunes[0];
+                        const tarifa = gtfsTarifas.get(ruta.route_id);
+                        const precio = tarifa ? `${tarifa.tarifa_num} ${tarifa.tipo_moneda}` : 'Consultar';
                         const icono = (ruta.route_type == 1) ? '🚇' : '🚌';
                         
-                        rutaHtml = `
-                            <div class="trip-step">
-                                <div class="flex-row">
-                                    <span class="trip-icon">${icono}</span>
-                                    <div>
-                                        <strong>Ruta Recomendada:</strong>
-                                        ${ruta.route_short_name} <small>(${ruta.route_long_name})</small>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                        rutaHtml = `<div class="trip-step"><div class="flex-row"><span class="trip-icon">${icono}</span><div><strong>Ruta Recomendada:</strong> ${ruta.route_short_name} <small>(${ruta.route_long_name})</small></div></div></div>`;
                         precioHtml = `<span class="trip-price-tag">${precio}</span>`;
                     } else {
-                        rutaHtml = `
-                            <div class="trip-step">
-                                <span class="trip-icon">⚠️</span>
-                                <div>
-                                    <strong>Sin ruta directa:</strong>
-                                    Deberás hacer transbordo. La parada más cercana al sitio es <b>${destino.stop.stop_name}</b>.
-                                </div>
-                            </div>
-                        `;
+                        rutaHtml = `<div class="trip-step"><span class="trip-icon">⚠️</span><div><strong>Sin ruta directa:</strong> Requiere transbordo o taxi. Parada más cercana: <b>${destino.stop.stop_name}</b>.</div></div>`;
                         precioHtml = `<span class="trip-price-tag" style="background:#999;">Varía</span>`;
                     }
 
                     resultDiv.innerHTML = `
-                        <div class="trip-step">
-                            <span class="trip-icon">🚶</span>
-                            <div>
-                                <strong>Paso 1:</strong> Camina a <b>${origen.stop.stop_name}</b> (${origen.dist.toFixed(2)} km)
-                            </div>
-                        </div>
+                        <div class="trip-step"><span class="trip-icon">🚶</span><div><strong>Paso 1:</strong> Camina a <b>${origen.stop.stop_name}</b> (${caminarInicio} km)</div></div>
                         ${rutaHtml}
-                        <div class="trip-step">
-                            <span class="trip-icon">🏁</span>
-                            <div>
-                                <strong>Llegada:</strong> Bájate en <b>${destino.stop.stop_name}</b>.
-                            </div>
-                        </div>
-                        <div class="trip-summary">
-                            <span>Distancia viaje: ${distTotal} km</span>
-                            ${precioHtml}
-                        </div>
-                        <a href="/?from=${origen.stop.stop_id}&to=${destino.stop.stop_id}" target="_blank" style="display:block;text-align:center;margin-top:10px;font-weight:700;text-decoration:none;color:var(--color-transporte);">
-                            Ver Horarios Detallados &rarr;
-                        </a>
+                        <div class="trip-step"><span class="trip-icon">🏁</span><div><strong>Llegada:</strong> Bájate en <b>${destino.stop.stop_name}</b> y camina ${caminarFin} km.</div></div>
+                        <div class="trip-summary"><span>Distancia: ~${distTotal} km</span>${precioHtml}</div>
+                        <a href="/?from=${origen.stop.stop_id}&to=${destino.stop.stop_id}" target="_blank" style="display:block;text-align:center;margin-top:10px;font-weight:700;text-decoration:none;color:var(--color-transporte);">Ver Horarios Detallados &rarr;</a>
                     `;
-
-                }, err => {
-                    resultDiv.innerHTML = '<p style="color:red;">Error de ubicación. Activa el GPS.</p>';
-                });
+                }, err => { resultDiv.innerHTML = '<p style="color:red;">Error de ubicación.</p>'; });
             };
 
-            // --- UTILIDADES ---
+            // Utils
             function findNearestStop(lat, lon) {
-                let nearest = null;
-                let minDist = Infinity;
+                let nearest = null, minDist = Infinity;
                 gtfsStops.forEach(stop => {
-                    // Ignorar andenes (location_type 0) si es posible
                     if (stop.location_type === '0') return;
-
                     const d = getDistance(lat, lon, parseFloat(stop.stop_lat), parseFloat(stop.stop_lon));
-                    if (d < minDist) {
-                        minDist = d;
-                        nearest = stop;
-                    }
+                    if (d < minDist) { minDist = d; nearest = stop; }
                 });
                 return nearest ? { stop: nearest, dist: minDist } : null;
             }
-
             function getRoutesAtStop(stopId) {
-                // Buscar rutas que pasan por esta parada (o sus hijos)
                 const routes = new Set();
                 const stopsToCheck = [stopId];
-                // Añadir hijos si es padre
                 gtfsStops.forEach(s => { if(s.parent_station === stopId) stopsToCheck.push(s.stop_id); });
-                
-                if (gtfsStopTimesPorParada.has(stopId)) {
-                    gtfsStopTimesPorParada.get(stopId).forEach(routeId => routes.add(routeId));
-                }
-                // Convertir Set a Array de objetos ruta
+                if (gtfsStopTimesPorParada.has(stopId)) gtfsStopTimesPorParada.get(stopId).forEach(rid => routes.add(rid));
                 return Array.from(routes).map(rid => gtfsRoutes.get(rid)).filter(r => r);
             }
-
             function getDistance(lat1, lon1, lat2, lon2) {
-                const R = 6371; 
-                const dLat = (lat2 - lat1) * Math.PI / 180;
-                const dLon = (lon2 - lon1) * Math.PI / 180;
-                const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                return R * c;
+                const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+                const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+                return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
             }
-
-            // JSON-LD
             function generateJsonLd() {
-                const schema = {
-                    "@context": "https://schema.org",
-                    "@type": "ItemList",
-                    "itemListElement": dbTurismo.map((p, i) => ({
-                        "@type": "ListItem",
-                        "position": i + 1,
-                        "item": {
-                            "@type": "TouristAttraction",
-                            "name": p.name,
-                            "description": p.desc,
-                            "image": p.img,
-                            "geo": { "@type": "GeoCoordinates", "latitude": p.lat, "longitude": p.lon },
-                            "address": { "@type": "PostalAddress", "addressLocality": p.city, "addressRegion": p.state, "addressCountry": "VE" }
-                        }
-                    }))
-                };
+                const schema = { "@context": "https://schema.org", "@type": "ItemList", "itemListElement": dbTurismo.map((p, i) => ({ "@type": "ListItem", "position": i+1, "item": { "@type": "TouristAttraction", "name": p.name, "description": p.desc, "image": p.img, "geo": { "@type": "GeoCoordinates", "latitude": p.lat, "longitude": p.lon }, "address": { "@type": "PostalAddress", "addressLocality": p.city, "addressRegion": p.state, "addressCountry": "VE" } } })) };
                 document.getElementById('json-ld-data').textContent = JSON.stringify(schema);
             }
 
-            // Listeners Filtros
-            document.querySelectorAll('.pill').forEach(p => {
-                p.addEventListener('click', () => {
-                    document.querySelector('.pill.active').classList.remove('active');
-                    p.classList.add('active');
-                    const cat = p.dataset.cat;
-                    renderPlaces(cat === 'all' ? dbTurismo : dbTurismo.filter(x => x.cat === cat));
-                });
-            });
-            
-            document.getElementById('search-input').addEventListener('input', (e) => {
-                const t = e.target.value.toLowerCase();
-                renderPlaces(dbTurismo.filter(p => p.name.toLowerCase().includes(t) || p.city.toLowerCase().includes(t)));
-            });
+            document.querySelectorAll('.pill').forEach(p => p.addEventListener('click', () => { document.querySelector('.pill.active').classList.remove('active'); p.classList.add('active'); const cat = p.dataset.cat; renderPlaces(cat === 'all' ? dbTurismo : dbTurismo.filter(x => x.cat === cat)); }));
+            document.getElementById('search-input').addEventListener('input', (e) => { const t = e.target.value.toLowerCase(); renderPlaces(dbTurismo.filter(p => p.name.toLowerCase().includes(t) || p.city.toLowerCase().includes(t))); });
 
             init();
         });
