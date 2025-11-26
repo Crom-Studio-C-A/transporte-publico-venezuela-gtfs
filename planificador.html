@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificador de Viajes - Crom Studio</title>
+    
+    <!-- JS de PapaParse -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Fuente Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Iconos Remix -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #0d6efd;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #212529;
+            --border: #dee2e6;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+        .logo { font-weight: 800; font-size: 18px; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .back-btn { text-decoration: none; color: #64748b; font-weight: 600; font-size: 14px; }
+
+        /* Layout */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 400px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 500;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+        }
+
+        .search-panel {
+            padding: 24px;
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .input-group { margin-bottom: 16px; position: relative; }
+        .input-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #64748b; }
+        
+        .modern-input {
+            width: 100%;
+            padding: 12px 16px 12px 40px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            background: #f8fafc;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .modern-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+        }
+        .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 38px;
+            color: #94a3b8;
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+        .search-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-btn:hover { background: #0b5ed7; }
+
+        .results-list { 
+            flex: 1;
+            padding: 20px; 
+            overflow-y: auto; 
+            background: #f1f5f9;
+        }
+        
+        .date-header {
+            font-size: 13px;
+            font-weight: 700;
+            color: #64748b;
+            margin: 20px 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .trip-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+        }
+        .trip-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+        
+        .trip-header {
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .trip-body { padding: 16px; }
+
+        .segment {
+            display: flex;
+            gap: 12px;
+            position: relative;
+            padding-bottom: 24px;
+        }
+        .segment:last-child { padding-bottom: 0; }
+        
+        .segment::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 26px;
+            bottom: 0;
+            width: 2px;
+            background: #e2e8f0;
+        }
+        .segment:last-child::before { display: none; }
+        
+        .seg-icon {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #ccc;
+            z-index: 1;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; flex-shrink: 0;
+        }
+        .seg-bus .seg-icon { border-color: var(--primary); color: var(--primary); }
+        .seg-walk .seg-icon { border-color: #f59e0b; color: #f59e0b; border-style: dashed; }
+        
+        .seg-content { flex: 1; }
+        .seg-time { font-weight: 700; font-size: 14px; color: var(--text); margin-right: 6px; }
+        .seg-title { font-size: 14px; font-weight: 600; color: var(--text); }
+        .seg-desc { font-size: 13px; color: #64748b; margin-top: 2px; }
+
+        .suggestions {
+            position: absolute;
+            top: 100%; left: 0; width: 100%;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 0 0 8px 8px;
+            z-index: 1000;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .suggestion-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background: #f8f9fa; }
+        .suggestion-item i { color: #94a3b8; }
+
+        .map-container {
+            flex: 1;
+            background: #e5e5e5;
+            position: relative;
+        }
+        #map { width: 100%; height: 100%; z-index: 1; }
+
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; }
+            .sidebar { width: 100%; height: 60vh; order: 2; }
+            .map-container { height: 40vh; order: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="ri-map-pin-range-fill"></i> Planificador de Rutas
+        </div>
+        <a href="https://transporte.cromstudio.com.ve/" class="back-btn"><i class="ri-arrow-left-line"></i> Volver a la App</a>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="search-panel">
+                <div class="input-group">
+                    <label class="input-label">Origen</label>
+                    <i class="ri-map-pin-user-line input-icon"></i>
+                    <input type="text" id="plan-origen-input" class="modern-input" placeholder="¿Desde dónde viajas?" autocomplete="off">
+                    <input type="hidden" id="plan-origen-id">
+                    <div id="plan-origen-list" class="suggestions"></div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Destino</label>
+                    <i class="ri-map-pin-2-line input-icon"></i>
+                    <input type="text" id="plan-dest-input" class="modern-input" placeholder="¿A dónde quieres ir?" autocomplete="off">
+                    <input type="hidden" id="plan-dest-id">
+                    <div id="plan-dest-list" class="suggestions"></div>
+                </div>
+                
+                <button id="btn-buscar-ruta" class="search-btn">
+                    <i class="ri-search-line"></i> Buscar Ruta
+                </button>
+            </div>
+            
+            <div id="planificador-resultados" class="results-list">
+                <div style="text-align: center; color: #94a3b8; padding: 40px; display: flex; flex-direction: column; align-items: center;">
+                    <i class="ri-road-map-line" style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;"></i>
+                    <p>Ingresa origen y destino para ver las mejores opciones de viaje.</p>
+                </div>
+            </div>
+        </aside>
+        
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        const GTFS_URL = "https://transporte.cromstudio.com.ve/";
+        // Límite de distancia "infinito" para permitir cualquier transbordo necesario
+        const MAX_DISTANCIA_TRANSBORDO_KM = 10000; 
+        const diasSemanaGTFS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+        const MIN_TIEMPO_TRANSBORDO_SEGUNDOS = 20 * 60; // 20 minutos colchón
+
+        // --- ESTADO ---
+        let db = { 
+            stops: [], paradasPrincipales: [], 
+            routes: new Map(), trips: new Map(), 
+            stopTimesByStop: new Map(), 
+            calendar: new Map(),
+            frequencies: new Map(),
+            childStops: new Map(),
+            tarifas: new Map(),
+            agencyTimezone: "America/Caracas" // Default
+        };
+        
+        let map;
+        let routeLayers = [];
+
+        // --- DOM Cache ---
+        const dom = {
+            planOrigenInput: document.getElementById("plan-origen-input"), 
+            planOrigenId: document.getElementById("plan-origen-id"),     
+            planOrigenList: document.getElementById("plan-origen-list"), 
+            planDestInput: document.getElementById("plan-dest-input"), 
+            planDestId: document.getElementById("plan-dest-id"),     
+            planDestList: document.getElementById("plan-dest-list"), 
+            btnBuscarRuta: document.getElementById("btn-buscar-ruta"),
+            planResultados: document.getElementById("planificador-resultados")
+        };
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            initMap();
+            await loadData();
+            popularDropdownsPlanificador();
+            
+            // Event Listeners
+            dom.btnBuscarRuta.addEventListener('click', buscarRutaGTFS);
+            
+            // Corrección de mapa (cuadros grises)
+            setTimeout(() => { map.invalidateSize(); }, 500);
+        });
+
+        function initMap() {
+            map = L.map('map').setView([9.5, -69.5], 7);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+        }
+
+        async function loadData() {
+            const parse = (file) => new Promise(resolve => {
+                Papa.parse(GTFS_URL + file, {
+                    download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+                    complete: r => resolve(r.data), error: () => resolve([])
+                });
+            });
+
+            const [agency, stops, routes, trips, stopTimes, calendar, freqs, tarifas] = await Promise.all([
+                parse("agency.txt"), parse("stops.txt"), parse("routes.txt"), parse("trips.txt"), 
+                parse("stop_times.txt"), parse("calendar.txt"), parse("frequencies.txt"), parse("tarifas.txt")
+            ]);
+
+            if(agency.length > 0) db.agencyTimezone = agency[0].agency_timezone || "America/Caracas";
+
+            routes.forEach(r => db.routes.set(r.route_id, r));
+            trips.forEach(t => db.trips.set(t.trip_id, t));
+            calendar.forEach(c => db.calendar.set(c.service_id, c));
+            tarifas.forEach(t => db.tarifas.set(t.route_id, t));
+            
+            freqs.forEach(f => {
+                if(!db.frequencies.has(f.trip_id)) db.frequencies.set(f.trip_id, []);
+                db.frequencies.get(f.trip_id).push(f);
+            });
+
+            stops.forEach(s => {
+                db.stops.push(s);
+                if(s.parent_station) {
+                    if(!db.childStops.has(s.parent_station)) db.childStops.set(s.parent_station, []);
+                    db.childStops.get(s.parent_station).push(s.stop_id);
+                }
+                // Filtro estricto para el buscador: Solo estaciones principales
+                if((s.location_type == 1 || !s.parent_station) && s.stop_name) {
+                    db.paradasPrincipales.push(s);
+                }
+            });
+
+            stopTimes.forEach(st => {
+                if (!db.stopTimesByStop.has(st.stop_id)) db.stopTimesByStop.set(st.stop_id, []);
+                db.stopTimesByStop.get(st.stop_id).push(st);
+            });
+
+            console.log("Datos cargados. Estaciones:", db.paradasPrincipales.length);
+        }
+
+        // --- AUTOCOMPLETE ---
+        function popularDropdownsPlanificador() {
+            configurarAutocomplete(dom.planOrigenInput, dom.planOrigenId, dom.planOrigenList);
+            configurarAutocomplete(dom.planDestInput, dom.planDestId, dom.planDestList);
+        }
+
+        function configurarAutocomplete(input, hiddenId, listContainer) {
+            const filterFn = () => {
+                const val = input.value.toLowerCase();
+                listContainer.innerHTML = '';
+                if(hiddenId) hiddenId.value = ''; 
+                
+                if (!val) { listContainer.style.display = 'none'; return; }
+
+                const matches = db.paradasPrincipales.filter(s => s.stop_name.toLowerCase().includes(val)).slice(0, 8);
+                
+                if(matches.length === 0) { 
+                    listContainer.style.display = 'none'; 
+                    return; 
+                }
+
+                matches.forEach(s => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    const icon = s.stop_name.toLowerCase().includes("estación") ? "ri-subway-line" : "ri-bus-fill";
+                    div.innerHTML = `<i class="${icon}" style="color:#94a3b8"></i> ${s.stop_name}`;
+                    
+                    div.onmousedown = () => {
+                        input.value = s.stop_name;
+                        if(hiddenId) hiddenId.value = s.stop_id;
+                        listContainer.style.display = 'none';
+                    };
+                    listContainer.appendChild(div);
+                });
+                listContainer.style.display = 'block';
+            };
+
+            input.addEventListener('input', filterFn);
+            input.addEventListener('focus', filterFn); // Mostrar al hacer foco
+            input.addEventListener('blur', () => setTimeout(() => listContainer.style.display = 'none', 200));
+        }
+
+        // --- LÓGICA DE TIEMPO ---
+        function getDatosDeTiempo(dayOffset = 0) {
+            const ahora = new Date();
+            if (dayOffset > 0) {
+                ahora.setDate(ahora.getDate() + dayOffset);
+            }
+            
+            const opcionesHora = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: db.agencyTimezone };
+            const horaFormato = new Intl.DateTimeFormat('es-VE', opcionesHora).format(ahora);
+            
+            const opcionesDia = { weekday: 'long', timeZone: db.agencyTimezone };
+            const diaNombreConAcento = new Intl.DateTimeFormat('es-VE', opcionesDia).format(ahora);
+            const diaNombreLimpio = diaNombreConAcento.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            const diaField = diasSemanaGTFS[diasSemanaGTFS.indexOf(diaNombreLimpio)] || 'monday'; // Corregido
+            
+            const ymdFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: db.agencyTimezone, year: 'numeric', month: '2-digit', day: '2-digit' });
+            const [y, m, d] = ymdFormatter.format(ahora).split('-');
+            const fechaYYYYMMDD = parseInt(`${y}${m}${d}`, 10);
+            
+            const segundosInicio = (dayOffset > 0) ? 0 : aSegundos(horaFormato);
+            
+            return {
+                segundosInicio,
+                diaField,
+                fechaYYYYMMDD,
+                diaNombre: diaNombreConAcento.charAt(0).toUpperCase() + diaNombreConAcento.slice(1),
+                fechaStr: `${d}/${m}/${y}`
+            };
+        }
+
+        function aSegundos(t) { if(!t) return 0; const [h,m,s] = t.split(':').map(Number); return h*3600 + m*60 + (s||0); }
+        function segundosAHora(s) {
+            let h = Math.floor(s/3600); 
+            let m = Math.floor((s%3600)/60); 
+            if(h>=24) { h=h-24; } // Simple wrap
+            return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+        }
+        function segundosAFormato(s) {
+            const h = Math.floor(s/3600); 
+            const m = Math.floor((s%3600)/60); 
+            return h > 0 ? `${h}h ${m}m` : `${m} min`; 
+        }
+        function getDist(s1, s2) {
+            if(!s1 || !s2) return 0;
+            const R = 6371; 
+            const dLat = (s2.stop_lat-s1.stop_lat)*Math.PI/180; 
+            const dLon = (s2.stop_lon-s1.stop_lon)*Math.PI/180; 
+            const a = Math.sin(dLat/2)**2 + Math.cos(s1.stop_lat*Math.PI/180)*Math.cos(s2.stop_lat*Math.PI/180)*Math.sin(dLon/2)**2; 
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+        function getStop(id) { return db.stops.find(s => s.stop_id === id); }
+        function getFamilyIds(parentId) {
+            const ids = [parentId];
+            if(db.childStops.has(parentId)) ids.push(...db.childStops.get(parentId));
+            return ids;
+        }
+        function esViajeValido(tripId, diaField, fecha) {
+            const trip = db.trips.get(tripId);
+            if (!trip) return false;
+            const cal = db.calendar.get(trip.service_id);
+            if (!cal) return false;
+            return cal[diaField] === 1 && fecha >= cal.start_date && fecha <= cal.end_date;
+        }
+
+        // --- ALGORITMO DE BÚSQUEDA ---
+        function buscarRutaGTFS() {
+            const originId = dom.planOrigenId.value;
+            const destId = dom.planDestId.value;
+            const container = dom.planResultados;
+            
+            // Limpiar mapa
+            routeLayers.forEach(l => map.removeLayer(l));
+            routeLayers = [];
+
+            if (!originId || !destId) {
+                alert("Por favor selecciona las paradas de la lista desplegable.");
+                return;
+            }
+            if (originId === destId) {
+                alert("El origen y destino son iguales.");
+                return;
+            }
+
+            container.innerHTML = '<p style="text-align:center;color:#666;">Calculando mejores rutas...</p>';
+
+            let allResults = [];
+            let diaBusqueda = 0; 
+            
+            // Buscar en los próximos 7 días
+            while (diaBusqueda < 7) {
+                let tiempo = getDatosDeTiempo(diaBusqueda);
+                let diaLabel = (diaBusqueda === 0) ? "Hoy" : (diaBusqueda === 1) ? "Mañana" : tiempo.diaNombre + " " + tiempo.fechaStr;
+                
+                // 1. Directas
+                let directas = findDirectRoutes(originId, destId, tiempo);
+                
+                // 2. Transbordos "Infinitos" (Priorizando menor distancia)
+                let transbordos = findTransferRoutes(originId, destId, tiempo);
+                
+                let diaResults = [...directas, ...transbordos];
+                
+                if(diaResults.length > 0) {
+                    diaResults.sort((a, b) => a.segundosLlegadaFinal - b.segundosLlegadaFinal);
+                    allResults.push({ diaLabel: diaLabel, rutas: diaResults });
+                }
+                
+                // Si hay resultados hoy, paramos.
+                if(diaResults.length > 0 && diaBusqueda === 0) break;
+                
+                diaBusqueda++;
+            }
+
+            // Fallback: Caminata directa si no hay transporte en 7 días
+            if (allResults.length === 0) {
+                const s1 = getStop(originId);
+                const s2 = getStop(destId);
+                const dist = getDist(s1, s2);
+                
+                allResults.push({
+                    diaLabel: "Opciones Alternativas",
+                    rutas: [{
+                        type: 'walk',
+                        segments: [{
+                            type: 'walk',
+                            from: s1, to: s2, dist: dist,
+                            desc: `Sin ruta de bus. Caminata/Taxi directo (${dist.toFixed(1)} km)`
+                        }]
+                    }]
+                });
+            }
+
+            renderResults(allResults);
+        }
+
+        function findDirectRoutes(originId, destId, tiempo) {
+            const { segundosInicio, diaField, fechaYYYYMMDD } = tiempo;
+            let results = [];
+            
+            const fromIds = getFamilyIds(originId);
+            const toIds = getFamilyIds(destId);
+            
+            let departures = [];
+            fromIds.forEach(id => departures = departures.concat(db.stopTimesByStop.get(id) || []));
+
+            for (const stOrigen of departures) {
+                const trip = db.trips.get(stOrigen.trip_id);
+                if(!trip || !esViajeValido(trip.trip_id, diaField, fechaYYYYMMDD)) continue;
+
+                const freqs = db.frequencies.get(trip.trip_id);
+                const route = db.routes.get(trip.route_id);
+
+                // Buscar destino posterior
+                let stDestino = null;
+                for(let tid of toIds) {
+                     const arrs = db.stopTimesByStop.get(tid) || [];
+                     const match = arrs.find(a => a.trip_id === trip.trip_id && parseInt(a.stop_sequence) > parseInt(stOrigen.stop_sequence));
+                     if(match) { stDestino = match; break; }
+                }
+
+                if (stDestino) {
+                    const times = getDepartureTimes(stOrigen, trip, segundosInicio);
+                    times.forEach(tObj => {
+                        // Calcular llegada aproximada (frecuencia) o exacta
+                        const travelTime = aSegundos(stDestino.arrival_time) - aSegundos(stOrigen.departure_time);
+                        const arrivalSecs = tObj.secs + travelTime;
+                        
+                        results.push({
+                            type: 'direct',
+                            segundosLlegadaFinal: arrivalSecs,
+                            segments: [{
+                                type: 'transit', route: route, trip: trip,
+                                from: getStop(originId), to: getStop(destId),
+                                depTime: tObj.str, arrTime: segundosAHora(arrivalSecs),
+                                routeType: route.route_type
+                            }]
+                        });
+                    });
+                }
+            }
+            return results;
+        }
+
+        function findTransferRoutes(originId, destId, tiempo) {
+            let results = [];
+            const { segundosInicio, diaField, fechaYYYYMMDD } = tiempo;
+            
+            const hubs = db.paradasPrincipales; 
+
+            hubs.forEach(hub => {
+                if (hub.stop_id === originId || hub.stop_id === destId) return;
+
+                // Intento 1: Origen -> Hub
+                const leg1List = findDirectRoutes(originId, hub.stop_id, tiempo);
+                
+                if (leg1List.length > 0) {
+                    const leg1 = leg1List[0]; // Mejor opción del tramo 1
+                    const arrivalAtHubSecs = aSegundos(leg1.segments[0].arrTime);
+                    
+                    // Hubs cercanos al Hub de llegada (transbordo espacial)
+                    let hubsCercanos = [hub];
+                    // Buscar otros hubs cercanos para permitir caminar entre terminales
+                    hubs.forEach(h => {
+                        if(h.stop_id !== hub.stop_id && getDist(hub, h) <= MAX_DISTANCIA_TRANSBORDO_KM) {
+                            hubsCercanos.push(h);
+                        }
+                    });
+
+                    hubsCercanos.forEach(hub2 => {
+                        const distWalk = getDist(hub, hub2);
+                        // Tiempo 2: Hora llegada + colchón
+                        const tiempo2 = { ...tiempo, segundosInicio: arrivalAtHubSecs + MIN_TIEMPO_TRANSBORDO_SEGUNDOS };
+                        
+                        // Intento 2: Hub2 -> Destino
+                        const leg2List = findDirectRoutes(hub2.stop_id, destId, tiempo2);
+                        
+                        if (leg2List.length > 0) {
+                            const leg2 = leg2List[0];
+                            
+                            let segments = [leg1.segments[0]];
+                            
+                            // Insertar segmento de caminata/taxi si es necesario
+                            if (distWalk > 0.1) {
+                                segments.push({
+                                    type: 'walk',
+                                    from: hub, to: hub2, dist: distWalk,
+                                    desc: `Transbordo: Caminar/Taxi ${distWalk.toFixed(1)} km`
+                                });
+                            }
+                            
+                            segments.push(leg2.segments[0]);
+                            
+                            results.push({
+                                type: 'transfer',
+                                segments: segments,
+                                segundosLlegadaFinal: leg2.segundosLlegadaFinal 
+                            });
+                        }
+                    });
+                }
+            });
+            
+            return results.slice(0, 3); 
+        }
+
+        function getDepartureTimes(st, trip, minSecs) {
+            const res = [];
+            const freqs = db.frequencies.get(trip.trip_id);
+            if(freqs && freqs.length > 0) {
+                // Frecuencia: Calcular salidas desde start_time hasta end_time
+                // st.departure_time es el offset desde el inicio del trip
+                // Simplificación: st.departure_time es la hora base. 
+                // Si usáramos offset real necesitaríamos la 1ra parada.
+                // Asumimos que departure_time en stop_times.txt es "relativo" o "absoluto" según GTFS.
+                // Aquí usamos la hora del stop_time como base.
+                const baseSecs = aSegundos(st.departure_time);
+                
+                freqs.forEach(f => {
+                    const start = aSegundos(f.start_time);
+                    const end = aSegundos(f.end_time);
+                    const head = parseInt(f.headway_secs);
+                    
+                    // Ajuste importante: start_time de freq es cuando sale el PRIMER viaje.
+                    // Si st no es la primera parada, su hora será start + offset.
+                    // Simplificamos usando el bucle de tiempo absoluto.
+                    
+                    for(let t=start; t<end; t+=head) {
+                        // Esto es una aproximación. En GTFS real, frequencies.txt sobreescribe stop_times.
+                        // Asumimos que t es la hora de salida en ESTA parada.
+                        if(t >= minSecs) res.push({secs:t, str:segundosAHora(t)});
+                    }
+                });
+            } else {
+                const s = aSegundos(st.departure_time);
+                if(s >= minSecs) res.push({secs: s, str: st.departure_time});
+            }
+            return res;
+        }
+
+        // --- RENDERIZADO ---
+        function renderResults(dataArray) {
+            const container = dom.planResultados;
+            container.innerHTML = '';
+            
+            dataArray.forEach(group => {
+                const header = document.createElement('div');
+                header.className = 'date-header';
+                header.textContent = group.diaLabel;
+                container.appendChild(header);
+
+                group.rutas.forEach((r, i) => {
+                    const card = document.createElement('div');
+                    card.className = 'trip-card';
+                    
+                    let html = `<div class="trip-header">Opción ${i+1}</div><div class="trip-body">`;
+                    let pathCoords = [];
+
+                    r.segments.forEach(seg => {
+                        pathCoords.push([seg.from.stop_lat, seg.from.stop_lon]);
+                        pathCoords.push([seg.to.stop_lat, seg.to.stop_lon]);
+
+                        if (seg.type === 'transit') {
+                            const icon = seg.route.route_type == 1 ? 'ri-subway-fill' : 'ri-bus-fill';
+                            const color = seg.route.route_type == 1 ? '#e11d48' : '#2563eb';
+                            html += `
+                            <div class="segment seg-bus">
+                                <div class="seg-icon" style="color:${color}; border-color:${color}"><i class="${icon}"></i></div>
+                                <div class="seg-content">
+                                    <div class="seg-title" style="color:${color}">${seg.route.route_short_name}</div>
+                                    <div class="seg-desc">
+                                        <span class="seg-time">${seg.depTime.substring(0,5)}</span> ${seg.from.stop_name}
+                                    </div>
+                                    <div class="seg-desc">
+                                        <span class="seg-time">${seg.arrTime.substring(0,5)}</span> ${seg.to.stop_name}
+                                    </div>
+                                </div>
+                            </div>`;
+                        } else {
+                            html += `
+                            <div class="segment seg-walk">
+                                <div class="seg-icon seg-walk-icon"><i class="ri-walk-line" style="color:#f59e0b"></i></div>
+                                <div class="seg-content">
+                                    <div class="seg-title" style="color:#b45309">${seg.desc}</div>
+                                    <div class="seg-desc">De ${seg.from.stop_name} a ${seg.to.stop_name}</div>
+                                </div>
+                            </div>`;
+                        }
+                    });
+                    html += `</div>`;
+                    card.innerHTML = html;
+                    
+                    card.onclick = () => drawRouteOnMap(pathCoords);
+                    container.appendChild(card);
+                });
+            });
+        }
+
+        function drawRouteOnMap(latlngs) {
+            routeLayers.forEach(l => map.removeLayer(l));
+            routeLayers = [];
+            
+            if(latlngs.length > 0) {
+                const line = L.polyline(latlngs, {color: '#2563eb', weight: 5}).addTo(map);
+                routeLayers.push(line);
+                
+                // Marcadores
+                const start = L.circleMarker(latlngs[0], {radius:6, color:'green', fillOpacity:1}).addTo(map);
+                const end = L.circleMarker(latlngs[latlngs.length-1], {radius:6, color:'red', fillOpacity:1}).addTo(map);
+                routeLayers.push(start, end);
+                
+                // Líneas punteadas para caminatas (simplificado: dibuja todo solido, pero podrías iterar segmentos)
+                map.fitBounds(line.getBounds(), {padding:[50,50]});
+            }
+        }
+
+    </script>
+</body>
+</html>

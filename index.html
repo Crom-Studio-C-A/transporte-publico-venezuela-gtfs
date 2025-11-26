@@ -1069,20 +1069,20 @@
                     
                     <h3>Usando Nuestros Datos</h3>
                     <p>Puedes consumir los mismos archivos que usa esta aplicación para tus propios proyectos. Los datos se actualizan regularmente y están disponibles públicamente en las siguientes URLs:</p>
-                                        <a href="https://transporte.cromstudio.com.ve/horarios.zip" target="_blank">Archivo GTFS .ZIP</a>
+                                        <a href="https://transporte.cromstudio.com.ve/data/horarios.zip" target="_blank">Archivo GTFS .ZIP</a>
                     <br>
                     <br>
                     <pre>
-https://transporte.cromstudio.com.ve/agency.txt
-https://transporte.cromstudio.com.ve/stops.txt
-https://transporte.cromstudio.com.ve/routes.txt
-https://transporte.cromstudio.com.ve/trips.txt
-https://transporte.cromstudio.com.ve/stop_times.txt
-https://transporte.cromstudio.com.ve/calendar.txt
-https://transporte.cromstudio.com.ve/shapes.txt
-https://transporte.cromstudio.com.ve/tarifas.txt
-https://transporte.cromstudio.com.ve/noticias.txt
-https://transporte.cromstudio.com.ve/frequencies.txt
+https://transporte.cromstudio.com.ve/data/agency.txt
+https://transporte.cromstudio.com.ve/data/stops.txt
+https://transporte.cromstudio.com.ve/data/routes.txt
+https://transporte.cromstudio.com.ve/data/trips.txt
+https://transporte.cromstudio.com.ve/data/stop_times.txt
+https://transporte.cromstudio.com.ve/data/calendar.txt
+https://transporte.cromstudio.com.ve/data/shapes.txt
+https://transporte.cromstudio.com.ve/data/tarifas.txt
+https://transporte.cromstudio.com.ve/data/noticias.txt
+https://transporte.cromstudio.com.ve/data/frequencies.txt
 </pre>
                     <p>Estos archivos siguen el estándar GTFS (con la adición de `tarifas.txt` y `noticias.txt` personalizados) y pueden ser utilizados en aplicaciones web, móviles o sistemas de información de transporte.</p>
                     
@@ -1108,7 +1108,7 @@ https://transporte.cromstudio.com.ve/frequencies.txt
         document.addEventListener("DOMContentLoaded", () => {
             
             // --- CONFIGURACIÓN ---
-            const gtfsBaseUrl = "https://transporte.cromstudio.com.ve/";
+            const gtfsBaseUrl = "https://transporte.cromstudio.com.ve/data/";
             const diasSemanaGTFS = {
                 "domingo": "sunday", "lunes": "monday", "martes": "tuesday",
                 "miercoles": "wednesday", "jueves": "thursday", "viernes": "friday", "sabado": "saturday"
