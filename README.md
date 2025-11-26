@@ -12,4 +12,4 @@ Este proyecto utiliza un esquema de **licencia dual** para fomentar la colaborac
 
 ### ¿Cómo dar crédito (Atribución)?
 Si utilizas estos datos o código en tu proyecto, por favor cítanos así:
-> "Datos de Transporte Público de Venezuela provistos por **Crom Studio / Emprendimiento A.R. 12 C.A.** y la comunidad de colaboradores Open Transit."
+> "Datos de Transporte Público de Venezuela provistos por **Crom Studio** y la comunidad de colaboradores."
