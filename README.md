@@ -44,13 +44,28 @@ Este es un proyecto impulsado por la comunidad. No necesitas ser programador par
 * 💻 **Código:** Mejora la aplicación de visualización o crea scripts de automatización.
 * 📢 **Difusión:** Comparte el proyecto con transportistas y universidades.
 
-### Pasos para colaborar
-1.  Haz un **Fork** de este repositorio.
-2.  Crea una rama (`git checkout -b feature/NuevaRutaMaracaibo`).
-3.  Haz tus cambios (agrega datos o mejora código).
-4.  Abre un **Pull Request** describiendo tus cambios.
+### 1. Reportar Errores o Nuevos Datos (Fácil)
 
-> **Nota:** Por favor, revisa nuestra `guia_contribucion.md` (próximamente) para asegurar que los datos cumplan con el estándar GTFS.
+Si conoces una ruta, una parada nueva, o ves un error en los datos actuales, no necesitas tocar el código:
+
+-   **Opción A (GitHub):** Abre un _Issue_ en este repositorio describiendo la ruta o el error.
+    
+-   **Opción B (Correo):** Escríbenos directamente a **soporte@cromstudio.com.ve**.
+
+### 2. Colaboración Técnica (Git)
+
+Si te manejas con Git y quieres aportar directamente:
+
+1.  (Opcional) Haz un **Fork** de este repositorio.
+    
+2.  Crea una rama (`git checkout -b feature/NuevaRutaMaracaibo`).
+    
+3.  Haz tus cambios en los archivos `.txt` dentro de `/data`.
+    
+4.  Abre un **Pull Request** describiendo tus cambios.
+    
+
+> **Nota:** Estamos construyendo una comunidad inclusiva. Cualquier aporte, desde una corrección de ortografía hasta una ruta completa de Metro, es valiosa.
 
 ## 🗺️ Estado del Mapa (Roadmap)
 
@@ -58,6 +73,37 @@ Este es un proyecto impulsado por la comunidad. No necesitas ser programador par
 * [X] **Fase 2:** Carga inicial de rutas principales (Caracas, Maracaibo, Guanare).
 * [ ] **Fase 3:** Validación oficial con Google Transit.
 * [ ] **Fase 4:** Integración de datos en tiempo real (si aplica).
+
+
+### Archivos Personalizados (Extensiones)
+
+Hemos añadido archivos extra para información local específica no cubierta por el estándar básico.
+
+#### `tarifas.txt`
+
+Define el costo numérico y la descripción del pago para cada ruta de manera explícita.
+
+```
+route_id,tarifa_num,tipo_moneda,descripcion_tarifa
+CSS-GRE,25,USD,Tarifa Caracas-Guanare: 25 USD (Pago móvil o efectivo)
+
+```
+
+#### `noticias.txt`
+
+Sistema de alertas y novedades para la App.
+
+-   Si `route_id` está vacío: Noticia general.
+    
+-   Si tiene `trip_headsign`: Noticia específica para un sentido del viaje.
+    
+
+```
+noticia_id,fecha_publicacion,tipo,titulo,descripcion,route_id,trip_headsign
+2,2025-11-13 17:00,ALERTA,Retrasos,Obras en la vía,L-CUATRI,Sentido Escuque
+
+```
+
 
 ## 📄 Licencias
 
