@@ -71,8 +71,8 @@ Si te manejas con Git y quieres aportar directamente:
 
 * [X] **Fase 1:** Estructura del proyecto y repositorio inicial.
 * [X] **Fase 2:** Carga inicial de rutas principales (Caracas, Maracaibo, Guanare).
-* [ ] **Fase 3:** Validación oficial con Google Transit.
-* [ ] **Fase 4:** Integración de datos en tiempo real (si aplica).
+* [ ] **Fase 3:** Validación oficial con Google.
+* [ ] **Fase 4:** Integración de datos en tiempo real (futuro).
 
 
 ### Archivos Personalizados (Extensiones)
