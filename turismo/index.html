@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- SEO Dinámico (Se actualiza por JS) -->
-    <title>Turismo en Venezuela - Guía de Viaje y Transporte</title>
+    <title>Turismo en Venezuela - Guía de Viaje y Transporte | Open Transit Venezuela</title>
     <meta name="description" content="Descubre los mejores destinos turísticos de Venezuela y cómo llegar en transporte público.">
     <meta name="robots" content="index, follow">
     
     <!-- Open Graph / Redes Sociales -->
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Crom Studio Turismo">
+    <meta property="og:site_name" content="Turismo Venezuela - Open Transit Venezuela">
     <meta property="og:image" content="https://cromstudio.com.ve/assets/turismo-cover.jpg">
 
     <!-- Librerías -->
@@ -451,7 +451,7 @@
                     const place = dbTurismo.find(p => normalizeSlug(p.name) === lugarSlug);
                     if (place) {
                         document.title = `${place.name} - Turismo Venezuela`;
-                        document.querySelector('meta[name="description"]').setAttribute("content", `Visita ${place.name} en ${place.city}. Descubre cómo llegar en transporte público con Crom Studio.`);
+                        document.querySelector('meta[name="description"]').setAttribute("content", `Visita ${place.name} en ${place.city}. Descubre cómo llegar en transporte público con Open Transit Venezuela.`);
                         
                         setTimeout(() => {
                             const card = document.getElementById(`card-${place.id}`);
