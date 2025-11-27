@@ -450,7 +450,7 @@
                     // Buscar por nombre normalizado (slug)
                     const place = dbTurismo.find(p => normalizeSlug(p.name) === lugarSlug);
                     if (place) {
-                        document.title = `${place.name} - Turismo Venezuela`;
+                        document.title = `Cómo llegar a ${place.name} - Turismo Venezuela`;
                         document.querySelector('meta[name="description"]').setAttribute("content", `Visita ${place.name} en ${place.city}. Descubre cómo llegar en transporte público con Open Transit Venezuela.`);
                         
                         setTimeout(() => {
