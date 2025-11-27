@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->
+
+
+<url>
+  <loc>https://transporte.cromstudio.com.ve/</loc>
+  <lastmod>2025-11-27T08:43:46+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+<url>
+  <loc>https://transporte.cromstudio.com.ve/desarrollo/</loc>
+  <lastmod>2025-11-27T08:43:46+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://transporte.cromstudio.com.ve/data/agency.txt</loc>
+  <lastmod>2025-11-27T08:43:46+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://transporte.cromstudio.com.ve/data/stops.txt</loc>
+  <lastmod>2025-11-27T08:43:46+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://transporte.cromstudio.com.ve/data/routes.txt</loc>
+  <lastmod>2025-11-27T08:43:46+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://transporte.cromstudio.com.ve/data/trips.txt</loc>
+  <lastmod>2025-11-27T08:43:46+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://transporte.cromstudio.com.ve/data/stop_times.txt</loc>
+  <lastmod>2025-11-27T08:43:46+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://transporte.cromstudio.com.ve/data/calendar.txt</loc>
+  <lastmod>2025-11-27T08:43:46+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://transporte.cromstudio.com.ve/data/shapes.txt</loc>
+  <lastmod>2025-11-27T08:43:46+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://transporte.cromstudio.com.ve/data/tarifas.txt</loc>
+  <lastmod>2025-11-27T08:43:46+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://transporte.cromstudio.com.ve/data/noticias.txt</loc>
+  <lastmod>2025-11-27T08:43:46+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+
+
+</urlset>
