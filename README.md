@@ -56,7 +56,7 @@ Si conoces una ruta, una parada nueva, o ves un error en los datos actuales, no 
 
 Si te manejas con Git y quieres aportar directamente:
 
-1.  (Opcional) Haz un **Fork** de este repositorio.
+1.  Haz un **Fork** de este repositorio.
     
 2.  Crea una rama (`git checkout -b feature/NuevaRutaMaracaibo`).
     
