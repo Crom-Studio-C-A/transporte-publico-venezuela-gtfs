@@ -71,7 +71,7 @@ Si te manejas con Git y quieres aportar directamente:
 
 * [X] **Fase 1:** Estructura del proyecto y repositorio inicial.
 * [X] **Fase 2:** Carga inicial de rutas principales (Caracas, Maracaibo, Guanare).
-* [ ] **Fase 3:** Validación oficial con Google.
+* [ ] **Fase 3:** Validación oficial con Plataformas de Mapeo.
 * [ ] **Fase 4:** Integración de datos en tiempo real (futuro).
 
 
