@@ -23,7 +23,7 @@ Este repositorio centraliza los datos de transporte público (Urbano, Interurban
 
 Además, incluye una **App/Herramienta** de código abierto para visualizar, validar y gestionar estos datos.
 
-Para más información sobre Modelo de Sostenibilidad y Transparencia <a href="http://creativecommons.org/licenses/by/4.0/">Click Aquí</a>.
+Para más información sobre Modelo de Sostenibilidad y Transparencia <a href="https://github.com/Crom-Studio-C-A/transporte-publico-venezuela-gtfs/blob/main-web/sostenibilidad.md">Click Aquí</a>.
 
 ## 📂 Estructura del Repositorio
 
