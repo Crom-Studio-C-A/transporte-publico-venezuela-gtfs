@@ -6,7 +6,7 @@
   
   Desarrollado por **Crom Studio** y la comunidad.
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  [![License: GPL-3.0](https://img.shields.io/badge/License-GPL-yellow.svg)](LICENSE)
   [![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE-DATA)
   [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
   [![Data Standard](https://img.shields.io/badge/Standard-GTFS-blue)](https://gtfs.org/)
@@ -23,6 +23,8 @@ Este repositorio centraliza los datos de transporte público (Urbano, Interurban
 
 Además, incluye una **App/Herramienta** de código abierto para visualizar, validar y gestionar estos datos.
 
+Para más información sobre Modelo de Sostenibilidad y Transparencia <a href="https://github.com/Crom-Studio-C-A/transporte-publico-venezuela-gtfs/blob/main-web/sostenibilidad.md">Click Aquí</a>.
+
 ## 📂 Estructura del Repositorio
 
 El proyecto se divide en dos componentes principales:
@@ -30,7 +32,7 @@ El proyecto se divide en dos componentes principales:
 | Directorio | Descripción | Licencia |
 | :--- | :--- | :--- |
 | 📁 `/data` | Contiene los archivos **GTFS** (rutas, horarios, paradas). | **CC BY 4.0** (Datos Abiertos) |
-| 📁 `index.html` | El código fuente de la aplicación/web para visualizar y gestionar los datos. | **MIT** (Software Libre) |
+| 📁 `index.html` | El código fuente de la aplicación/web para visualizar y gestionar los datos. | **GPL-3.0** |
 
 
 ## 🤝 Cómo Contribuir (¡Necesitamos tu ayuda!)
@@ -109,7 +111,7 @@ noticia_id,fecha_publicacion,tipo,titulo,descripcion,route_id,trip_headsign
 
 Este proyecto utiliza un esquema de **licencia dual** para fomentar la colaboración y el uso libre:
 
-* 💻 **Código Fuente:** Bajo la licencia **[MIT](LICENSE)**.
+* 💻 **Código Fuente:** Bajo la licencia **[GPL-3.0](LICENSE)**.
 * 🗺️ **Datos (GTFS):** Bajo la licencia **[Creative Commons Atribución 4.0 Internacional (CC BY 4.0)](LICENSE-DATA)**.
 
 <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Licencia Creative Commons" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />Esta obra está bajo una <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Licencia Creative Commons Atribución 4.0 Internacional</a>.
