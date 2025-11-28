@@ -6,7 +6,7 @@
   
   Desarrollado por **Crom Studio** y la comunidad.
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  [![License: MIT](https://img.shields.io/badge/License-GPL-yellow.svg)](LICENSE)
   [![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE-DATA)
   [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
   [![Data Standard](https://img.shields.io/badge/Standard-GTFS-blue)](https://gtfs.org/)
