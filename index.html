@@ -751,7 +751,7 @@
         }
 
         /* --- NUEVO: BANNER DE CONSENTIMIENTO (TELEMETRÍA) --- */
-        #banner-consentimiento {
+        #banner-consentimiento, #banner-anuncios {
             position: fixed;
             bottom: 20px;
             left: 50%;
@@ -774,12 +774,12 @@
             to { transform: translate(-50%, 0); opacity: 1; }
         }
 
-        #banner-consentimiento h3 {
+        #banner-consentimiento h3, #banner-anuncios h3 {
             margin: 0 0 10px 0;
             font-size: 18px;
             color: var(--color-texto);
         }
-        #banner-consentimiento p {
+        #banner-consentimiento p, #banner-anuncios p {
             margin: 0 0 15px 0;
             font-size: 14px;
             line-height: 1.5;
@@ -805,6 +805,13 @@
         .btn-consent-decline {
             background: #e9ecef;
             color: var(--color-texto);
+        }
+        
+        /* ESTILOS DE ANUNCIOS */
+        .ad-container {
+            width: 100%;
+            overflow: hidden;
+            background: transparent;
         }
 
         @media (max-width: 768px) {
@@ -873,7 +880,7 @@
                 grid-template-columns: 1fr;
             }
             
-            #banner-consentimiento {
+            #banner-consentimiento, #banner-anuncios {
                 width: 95%;
                 bottom: 10px;
             }
@@ -931,6 +938,11 @@
                 
                 <div id="agency-filter-container">
                     <!-- Los botones de filtro se añadirán aquí -->
+                </div>
+                
+                <!-- ESPACIO PARA ANUNCIO FEED -->
+                <div id="ad-feed-container" class="ad-container" style="display:none; margin: 10px 0;">
+                    <!-- Se inyectará si se aprueba el consentimiento -->
                 </div>
                 
                 <div id="novedades-generales-container" class="novedades-container" style="display: none;">
@@ -1026,8 +1038,14 @@
                     
                     <button id="btn-buscar-ruta">Buscar Ruta</button>
                 </div>
+                
                 <div id="planificador-resultados">
                     <!-- Los resultados de la búsqueda aparecerán aquí -->
+                </div>
+
+                <!-- ESPACIO PARA ANUNCIO ADAPTABLE -->
+                <div id="ad-responsive-container" class="ad-container" style="display:none; margin: 20px 0;">
+                     <!-- Se inyectará si se aprueba el consentimiento -->
                 </div>
             </div>
         </div>
@@ -1115,7 +1133,7 @@
                         </svg>
                         <div>
                             <h2>Open Transit Venezuela</h2>
-                            <p style="margin: 0; font-weight: 600;">Versión: v22 (Open Source)</p>
+                            <p style="margin: 0; font-weight: 600;">Versión: v25 (Open Source)</p>
                         </div>
                     </div>
                     
@@ -1130,9 +1148,12 @@
                     <h3>Fuente de Datos</h3>
                     <p>Todos los horarios, rutas y paradas se basan en los archivos estándar GTFS (General Transit Feed Specification) proporcionados por las agencias de transporte (Linea Cuatricentenaria, SITSSA, BusPortuguesa).</p>
                     
-                    <h3>Privacidad y Telemetría</h3>
-                    <p>Utilizamos datos anónimos para mejorar la aplicación (rutas más buscadas, errores, etc.). Puedes cambiar tu configuración aquí:</p>
-                    <button id="btn-reset-telemetria" style="background:#6c757d;">Restablecer Preferencias de Privacidad</button>
+                    <h3>Privacidad, Anuncios y Telemetría</h3>
+                    <p>Utilizamos datos anónimos para mejorar la aplicación. También usamos anuncios para sostener el proyecto. Puedes cambiar tu configuración aquí:</p>
+                    
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button id="btn-reset-telemetria" style="background:#6c757d;">Restablecer Preferencias</button>
+                    </div>
 
                     <p style="margin-top: 30px; text-align: center; color: var(--color-texto-secundario);">&copy; 2025 Crom Studio. Todos los derechos reservados.</p>
                 </div>
@@ -1180,13 +1201,23 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
         
     </div>
 
-    <!-- BANNER DE CONSENTIMIENTO -->
+    <!-- BANNER DE CONSENTIMIENTO (Telemetría) -->
     <div id="banner-consentimiento">
         <h3>🍪 Ayúdanos a Mejorar</h3>
         <p>Utilizamos telemetría <strong>totalmente anónima</strong> para saber qué rutas y horarios son más consultados. Esto nos ayuda a mejorar el servicio. ¿Nos das tu permiso?</p>
         <div class="banner-botones">
             <button id="btn-consent-decline" class="btn-consent btn-consent-decline">No, gracias</button>
             <button id="btn-consent-accept" class="btn-consent btn-consent-accept">Sí, acepto</button>
+        </div>
+    </div>
+    
+    <!-- BANNER DE ANUNCIOS (Apoyo) -->
+    <div id="banner-anuncios">
+        <h3>📢 Apoya este Proyecto</h3>
+        <p>Esta aplicación es gratuita y de código abierto. ¿Te gustaría apoyarnos activando anuncios pequeños no invasivos? Esto nos ayuda a pagar los servidores.</p>
+        <div class="banner-botones">
+            <button id="btn-ads-decline" class="btn-consent btn-consent-decline">Prefiero sin anuncios</button>
+            <button id="btn-ads-accept" class="btn-consent btn-consent-accept">Sí, apoyar</button>
         </div>
     </div>
 
@@ -1229,10 +1260,15 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 btnDirectorio: document.getElementById("btn-directorio"), // Añadido
                 visorDirectorio: document.getElementById("visor-directorio"), // Añadido
 
-                // Telemetría
+                // Consentimiento & Telemetría & Anuncios
                 bannerConsentimiento: document.getElementById("banner-consentimiento"),
                 btnConsentAccept: document.getElementById("btn-consent-accept"),
                 btnConsentDecline: document.getElementById("btn-consent-decline"),
+                
+                bannerAnuncios: document.getElementById("banner-anuncios"),
+                btnAdsAccept: document.getElementById("btn-ads-accept"),
+                btnAdsDecline: document.getElementById("btn-ads-decline"),
+                
                 btnResetTelemetria: document.getElementById("btn-reset-telemetria"),
 
                 // Panel Horarios
@@ -1324,58 +1360,120 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 /* Oculto por petición del usuario */
             }
 
-            // --- TELEMETRÍA: LÓGICA DE CONSENTIMIENTO ---
-            function initTelemetry() {
-                const consent = localStorage.getItem('telemetry_consent');
+            // --- GESTIÓN DE PRIVACIDAD (TELEMETRÍA + ANUNCIOS) ---
+            function initPrivacyFlow() {
+                // 1. Chequear Telemetría
+                const telemetryConsent = localStorage.getItem('telemetry_consent');
                 
-                if (consent === 'granted') {
-                    activarTelemetria();
-                } else if (consent === 'denied') {
-                    // Ya está denegada por defecto en el HTML, no hacemos nada.
-                    console.log("Telemetría desactivada por el usuario.");
-                } else {
-                    // No hay decisión, mostrar banner
+                if (!telemetryConsent) {
+                    // Si no hay decisión, mostrar banner Telemetría
                     dom.bannerConsentimiento.style.display = 'block';
+                } else {
+                    // Si ya decidió sobre telemetría, aplicar y pasar a Anuncios
+                    if (telemetryConsent === 'granted') activarTelemetria();
+                    checkAdsConsent();
                 }
 
-                // Listeners de los botones del banner
+                // Listeners Telemetría
                 dom.btnConsentAccept.addEventListener('click', () => {
                     localStorage.setItem('telemetry_consent', 'granted');
                     dom.bannerConsentimiento.style.display = 'none';
                     activarTelemetria();
+                    checkAdsConsent(); // Preguntar por anuncios
                 });
 
                 dom.btnConsentDecline.addEventListener('click', () => {
                     localStorage.setItem('telemetry_consent', 'denied');
                     dom.bannerConsentimiento.style.display = 'none';
-                    // Asegurarse de mantener denegado
-                    gtag('consent', 'update', {
-                        'analytics_storage': 'denied',
-                        'ad_storage': 'denied'
-                    });
+                    // Asegurar denegado
+                    gtag('consent', 'update', { 'analytics_storage': 'denied', 'ad_storage': 'denied' });
+                    checkAdsConsent(); // Preguntar por anuncios
                 });
 
-                // Listener para resetear (botón en Acerca De)
+                // Listeners Anuncios
+                dom.btnAdsAccept.addEventListener('click', () => {
+                    localStorage.setItem('ads_consent', 'granted');
+                    dom.bannerAnuncios.style.display = 'none';
+                    activarAnuncios();
+                });
+                
+                dom.btnAdsDecline.addEventListener('click', () => {
+                    localStorage.setItem('ads_consent', 'denied');
+                    dom.bannerAnuncios.style.display = 'none';
+                });
+
+                // Reset general
                 dom.btnResetTelemetria.addEventListener('click', () => {
                     localStorage.removeItem('telemetry_consent');
-                    alert("Preferencias restablecidas. Recarga la página para ver el banner nuevamente.");
+                    localStorage.removeItem('ads_consent');
+                    alert("Preferencias restablecidas. Recarga la página para configurar de nuevo.");
                     window.location.reload();
                 });
+            }
+            
+            function checkAdsConsent() {
+                const adsConsent = localStorage.getItem('ads_consent');
+                if (!adsConsent) {
+                    // Mostrar banner de Anuncios
+                    dom.bannerAnuncios.style.display = 'block';
+                } else if (adsConsent === 'granted') {
+                    activarAnuncios();
+                }
             }
 
             function activarTelemetria() {
                 console.log("Telemetría activada.");
-                // Actualizar estado de Google Consent Mode
                 gtag('consent', 'update', {
                     'analytics_storage': 'granted',
-                    'personalization_storage': 'granted' // Opcional, dependiendo de uso
+                    'personalization_storage': 'granted'
                 });
+                trackEvent('app_init', { 'version': 'v25' });
+            }
+            
+            function activarAnuncios() {
+                console.log("Activando Anuncios...");
                 
-                // Enviar evento de inicio
-                trackEvent('app_init', { 'version': 'v22' });
+                // 1. Inyectar Script de AdSense dinámicamente
+                if (!document.getElementById('adsense-script')) {
+                    const script = document.createElement('script');
+                    script.id = 'adsense-script';
+                    script.async = true;
+                    script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7313467653686833";
+                    script.crossOrigin = "anonymous";
+                    document.head.appendChild(script);
+                }
+
+                // 2. Inyectar Bloque 1: Feed (En Panel Rutas)
+                const feedContainer = document.getElementById('ad-feed-container');
+                if (feedContainer) {
+                    feedContainer.style.display = 'block';
+                    feedContainer.innerHTML = `
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-format="fluid"
+                             data-ad-layout-key="-fb+5w+4e-db+86"
+                             data-ad-client="ca-pub-7313467653686833"
+                             data-ad-slot="8712731552"></ins>
+                    `;
+                    (window.adsbygoogle = window.adsbygoogle || []).push({});
+                }
+
+                // 3. Inyectar Bloque 2: Adaptable (En Planificador)
+                const responsiveContainer = document.getElementById('ad-responsive-container');
+                if (responsiveContainer) {
+                    responsiveContainer.style.display = 'block';
+                    responsiveContainer.innerHTML = `
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="ca-pub-7313467653686833"
+                             data-ad-slot="8613601154"
+                             data-ad-format="auto"
+                             data-full-width-responsive="true"></ins>
+                    `;
+                    (window.adsbygoogle = window.adsbygoogle || []).push({});
+                }
             }
 
-            // Wrapper seguro para enviar eventos solo si hay permiso
             function trackEvent(eventName, params = {}) {
                 if (localStorage.getItem('telemetry_consent') === 'granted') {
                     gtag('event', eventName, params);
@@ -1385,7 +1483,7 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
             // --- INICIALIZACIÓN ---
             async function main() {
                 try {
-                    initTelemetry(); // Iniciar sistema de consentimiento
+                    initPrivacyFlow(); // Iniciar flujo de privacidad (Telemetría -> Anuncios)
 
                     logDebug("Iniciando carga de archivos GTFS...");
                     const parseFile = (fileName) => {
@@ -2818,7 +2916,6 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
             window.addEventListener('resize', () => mostrarPanelHorarios(esMovil() ? 'panel-rutas' : 'panel-rutas'));
         });
     </script>
-
 
 
 </body>
