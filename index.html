@@ -2631,5 +2631,29 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
             window.addEventListener('resize', () => mostrarPanelHorarios(esMovil() ? 'panel-rutas' : 'panel-rutas'));
         });
     </script>
+
+     <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyA8dT38OlL4DU5JHJVo4gDcwLl9Wo5sPUs",
+    authDomain: "crom-studio.firebaseapp.com",
+    projectId: "crom-studio",
+    storageBucket: "crom-studio.firebasestorage.app",
+    messagingSenderId: "794549641659",
+    appId: "1:794549641659:web:d690dd18a0e78ae405a49e",
+    measurementId: "G-WFCF5JW2NP"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
 </body>
 </html>
