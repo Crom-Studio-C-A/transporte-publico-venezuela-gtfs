@@ -71,12 +71,23 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FTCG8F3HMV"></script>
+    <!-- ========================================== -->
+    <!-- TELEMETRÍA GOOGLE ANALYTICS (Gtag.js)      -->
+    <!-- ========================================== -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZLR7GZW3KP"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      
+      // 1. Inicializar con consentimientos DENEGADOS por defecto
+      gtag('consent', 'default', {
+        'ad_storage': 'denied',
+        'analytics_storage': 'denied',
+        'personalization_storage': 'denied'
+      });
+      
       gtag('js', new Date());
-      gtag('config', 'G-FTCG8F3HMV');
+      gtag('config', 'G-ZLR7GZW3KP');
     </script>
 
     <!-- CSS (Diseño "Super Moderno" v22) -->
@@ -739,6 +750,63 @@
             z-index: 0;
         }
 
+        /* --- NUEVO: BANNER DE CONSENTIMIENTO (TELEMETRÍA) --- */
+        #banner-consentimiento {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 1px solid var(--color-borde);
+            z-index: 9999;
+            display: none; /* Oculto por defecto */
+            animation: slideUp 0.3s ease-out;
+            font-family: 'Inter', sans-serif;
+        }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        #banner-consentimiento h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: var(--color-texto);
+        }
+        #banner-consentimiento p {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--color-texto-secundario);
+        }
+        .banner-botones {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .btn-consent {
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-consent-accept {
+            background: var(--color-gradiente);
+            color: white;
+        }
+        .btn-consent-decline {
+            background: #e9ecef;
+            color: var(--color-texto);
+        }
+
         @media (max-width: 768px) {
             #main-nav ul {
                 justify-content: flex-start; /* Alinear a la izquierda para scroll */
@@ -803,6 +871,11 @@
             
             #planificador-form {
                 grid-template-columns: 1fr;
+            }
+            
+            #banner-consentimiento {
+                width: 95%;
+                bottom: 10px;
             }
         }
     </style>
@@ -1057,6 +1130,10 @@
                     <h3>Fuente de Datos</h3>
                     <p>Todos los horarios, rutas y paradas se basan en los archivos estándar GTFS (General Transit Feed Specification) proporcionados por las agencias de transporte (Linea Cuatricentenaria, SITSSA, BusPortuguesa).</p>
                     
+                    <h3>Privacidad y Telemetría</h3>
+                    <p>Utilizamos datos anónimos para mejorar la aplicación (rutas más buscadas, errores, etc.). Puedes cambiar tu configuración aquí:</p>
+                    <button id="btn-reset-telemetria" style="background:#6c757d;">Restablecer Preferencias de Privacidad</button>
+
                     <p style="margin-top: 30px; text-align: center; color: var(--color-texto-secundario);">&copy; 2025 Crom Studio. Todos los derechos reservados.</p>
                 </div>
             </div>
@@ -1103,12 +1180,22 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
         
     </div>
 
+    <!-- BANNER DE CONSENTIMIENTO -->
+    <div id="banner-consentimiento">
+        <h3>🍪 Ayúdanos a Mejorar</h3>
+        <p>Utilizamos telemetría <strong>totalmente anónima</strong> para saber qué rutas y horarios son más consultados. Esto nos ayuda a mejorar el servicio. ¿Nos das tu permiso?</p>
+        <div class="banner-botones">
+            <button id="btn-consent-decline" class="btn-consent btn-consent-decline">No, gracias</button>
+            <button id="btn-consent-accept" class="btn-consent btn-consent-accept">Sí, acepto</button>
+        </div>
+    </div>
+
     <!-- ===== SCRIPTS ===== -->
     
     <!-- JS de PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-    <!-- SCRIPT DE LA APLICACIÓN (Actualizado con Leaflet) -->
+    <!-- SCRIPT DE LA APLICACIÓN (Actualizado con Telemetría) -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             
@@ -1119,7 +1206,7 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 "miercoles": "wednesday", "jueves": "thursday", "viernes": "friday", "sabado": "saturday"
             };
             const MIN_TIEMPO_TRANSBORDO_SEGUNDOS = 20 * 60; // 20 minutos
-            const MAX_DISTANCIA_TRANSBORDO_KM = 20; // 10km para transbordos (ej. Guanare a Cabrestero)
+            const MAX_DISTANCIA_TRANSBORDO_KM = 20; // 10km para transbordos
             const MAX_DISTANCIA_CERCANA_KM = 2.0; // 2km para "Paradas Cerca de Mí"
             
             // --- DOM REFS ---
@@ -1141,6 +1228,12 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 btnDesarrollo: document.getElementById("btn-desarrollo"),
                 btnDirectorio: document.getElementById("btn-directorio"), // Añadido
                 visorDirectorio: document.getElementById("visor-directorio"), // Añadido
+
+                // Telemetría
+                bannerConsentimiento: document.getElementById("banner-consentimiento"),
+                btnConsentAccept: document.getElementById("btn-consent-accept"),
+                btnConsentDecline: document.getElementById("btn-consent-decline"),
+                btnResetTelemetria: document.getElementById("btn-reset-telemetria"),
 
                 // Panel Horarios
                 estadoCarga: document.getElementById("estado-carga"),
@@ -1220,7 +1313,7 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 rutaActiva: null, paradaActiva: null,
                 diaActualGTFS_Field: 'monday',
                 fechaActualYYYYMMDD: 20250101,
-                mapaPrincipal: null,  // Antes googleMap
+                mapaPrincipal: null,
                 mapaInicializado: false,
                 directorioMapa: null 
             };
@@ -1231,9 +1324,69 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 /* Oculto por petición del usuario */
             }
 
+            // --- TELEMETRÍA: LÓGICA DE CONSENTIMIENTO ---
+            function initTelemetry() {
+                const consent = localStorage.getItem('telemetry_consent');
+                
+                if (consent === 'granted') {
+                    activarTelemetria();
+                } else if (consent === 'denied') {
+                    // Ya está denegada por defecto en el HTML, no hacemos nada.
+                    console.log("Telemetría desactivada por el usuario.");
+                } else {
+                    // No hay decisión, mostrar banner
+                    dom.bannerConsentimiento.style.display = 'block';
+                }
+
+                // Listeners de los botones del banner
+                dom.btnConsentAccept.addEventListener('click', () => {
+                    localStorage.setItem('telemetry_consent', 'granted');
+                    dom.bannerConsentimiento.style.display = 'none';
+                    activarTelemetria();
+                });
+
+                dom.btnConsentDecline.addEventListener('click', () => {
+                    localStorage.setItem('telemetry_consent', 'denied');
+                    dom.bannerConsentimiento.style.display = 'none';
+                    // Asegurarse de mantener denegado
+                    gtag('consent', 'update', {
+                        'analytics_storage': 'denied',
+                        'ad_storage': 'denied'
+                    });
+                });
+
+                // Listener para resetear (botón en Acerca De)
+                dom.btnResetTelemetria.addEventListener('click', () => {
+                    localStorage.removeItem('telemetry_consent');
+                    alert("Preferencias restablecidas. Recarga la página para ver el banner nuevamente.");
+                    window.location.reload();
+                });
+            }
+
+            function activarTelemetria() {
+                console.log("Telemetría activada.");
+                // Actualizar estado de Google Consent Mode
+                gtag('consent', 'update', {
+                    'analytics_storage': 'granted',
+                    'personalization_storage': 'granted' // Opcional, dependiendo de uso
+                });
+                
+                // Enviar evento de inicio
+                trackEvent('app_init', { 'version': 'v22' });
+            }
+
+            // Wrapper seguro para enviar eventos solo si hay permiso
+            function trackEvent(eventName, params = {}) {
+                if (localStorage.getItem('telemetry_consent') === 'granted') {
+                    gtag('event', eventName, params);
+                }
+            }
+
             // --- INICIALIZACIÓN ---
             async function main() {
                 try {
+                    initTelemetry(); // Iniciar sistema de consentimiento
+
                     logDebug("Iniciando carga de archivos GTFS...");
                     const parseFile = (fileName) => {
                         return new Promise((resolve, reject) => {
@@ -1293,7 +1446,6 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
 
                     logDebug("Creando índice de Paradas/Andenes...", 'info');
                     db.stops.forEach(stop => {
-                        // CORRECCIÓN: Usar '==' para comparar `location_type` (puede ser string '0' o num 0)
                         if (stop.location_type != 0 && stop.stop_name) {
                             db.paradasPrincipales.set(stop.stop_id, stop);
                         }
@@ -1335,12 +1487,16 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                     dom.estadoCarga.textContent = `Error al cargar: ${error.message}`;
                     dom.estadoCarga.className = "status-error";
                     logDebug(error.message, 'error');
+                    trackEvent('error_loading', { 'message': error.message });
                 }
             }
 
             // --- NAVEGACIÓN ---
             
             function mostrarVisor(visorId) {
+                // Telemetría de Pantallas
+                trackEvent('screen_view', { 'screen_name': visorId });
+
                 // Ocultar todos los visores
                 dom.visorHorarios.style.display = 'none';
                 dom.visorMapa.style.display = 'none';
@@ -1361,12 +1517,11 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                     
                     requestAnimationFrame(() => {
                         if (!estadoApp.mapaInicializado) {
-                            iniciarMapaLeaflet(); // CAMBIADO A LEAFLET
+                            iniciarMapaLeaflet(); 
                             renderizarTodasLasRutasEnMapa(); 
                             renderizarTodasLasParadasEnMapa(); 
                             estadoApp.mapaInicializado = true;
                         } else {
-                            // Redimensionar Leaflet al mostrar el contenedor
                             if(estadoApp.mapaPrincipal) estadoApp.mapaPrincipal.invalidateSize();
                         }
                     });
@@ -1660,8 +1815,14 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                         document.querySelectorAll('#lista-rutas .list-item').forEach(el => el.classList.remove('active'));
                         div.classList.add('active');
                         estadoApp.rutaActiva = route.route_id;
-                        logDebug(`Ruta seleccionada: ${route.route_long_name}`, 'info');
                         
+                        // TELEMETRÍA
+                        trackEvent('select_route', {
+                            'route_id': route.route_id,
+                            'route_name': route.route_long_name
+                        });
+
+                        logDebug(`Ruta seleccionada: ${route.route_long_name}`, 'info');
                         renderizarNovedadesDeRuta(route.route_id);
                         renderizarListaParadasDeRuta(route.route_id);
                     });
@@ -1724,6 +1885,13 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                         document.querySelectorAll('#lista-paradas .list-item').forEach(el => el.classList.remove('active'));
                         div.classList.add('active');
                         estadoApp.paradaActiva = stop.stop_id; // Guardar ID de la ESTACIÓN
+                        
+                        // TELEMETRÍA
+                        trackEvent('select_stop', {
+                            'stop_id': stop.stop_id,
+                            'stop_name': stop.stop_name
+                        });
+
                         logDebug(`Parada seleccionada: ${stop.stop_name}`, 'info');
                         renderizarHorarios(stop.stop_id, false);
                     });
@@ -2006,6 +2174,9 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
             // --- NUEVAS FUNCIONES (GEOLOCALIZACIÓN Y DIRECTORIO) ---
 
             function buscarParadasCercanas() {
+                // TELEMETRÍA
+                trackEvent('search_nearby', { 'category': 'geolocation' });
+
                 if (!navigator.geolocation) {
                     dom.cercanasStatus.textContent = "Tu navegador no soporta geolocalización.";
                     dom.cercanasStatus.style.color = "red";
@@ -2063,6 +2234,14 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                     div.addEventListener('click', () => {
                         estadoApp.paradaActiva = stop.stop_id;
                         estadoApp.rutaActiva = null; // Mostrar todas las rutas
+                        
+                        // Telemetría
+                        trackEvent('select_stop', {
+                            'stop_id': stop.stop_id,
+                            'stop_name': stop.stop_name,
+                            'source': 'cerca_de_mi'
+                        });
+
                         renderizarHorarios(stop.stop_id, false);
                         mostrarVisor('visor-horarios');
                         mostrarPanelHorarios('show-detalles');
@@ -2096,6 +2275,8 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
             function mostrarDetalleDeParada(stopId) {
                 const stop = db.stops.get(stopId);
                 if (!stop) return;
+
+                trackEvent('view_stop_directory', { 'stop_name': stop.stop_name });
 
                 dom.directorioDetalleTitulo.textContent = stop.stop_name;
                 
@@ -2516,6 +2697,12 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                     dom.planResultados.innerHTML = `<h3 style="color: var(--color-alerta-texto); text-align: center;">Por favor seleccione un origen y un destino válidos.</h3>`;
                     return;
                 }
+
+                // TELEMETRÍA
+                trackEvent('search_trip', {
+                    'origin_id': origenId,
+                    'destination_id': destinoId
+                });
                 
                 let todosLosResultados = [];
                 let diaBusqueda = 0; 
@@ -2632,29 +2819,7 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
         });
     </script>
 
-     <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyA8dT38OlL4DU5JHJVo4gDcwLl9Wo5sPUs",
-    authDomain: "crom-studio.firebaseapp.com",
-    projectId: "crom-studio",
-    storageBucket: "crom-studio.firebasestorage.app",
-    messagingSenderId: "794549641659",
-    appId: "1:794549641659:web:d690dd18a0e78ae405a49e",
-    measurementId: "G-WFCF5JW2NP"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
 
 </body>
 </html>
