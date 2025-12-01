@@ -23,9 +23,9 @@ class TransitRouter {
         // Configuración del algoritmo
         this.CONFIG = {
             WALK_SPEED: 1.1, // metros por segundo (~4 km/h)
-            MAX_WALK_DIST: 2000, // metros máximos totales caminando
+            MAX_WALK_DIST: 200000, // metros máximos totales caminando
             TRANSFER_PENALTY: 300, // 5 minutos de "castigo" por hacer transbordo (evita transbordos innecesarios)
-            MAX_SEARCH_TIME: 7200 // 2 horas ventana de búsqueda
+            MAX_SEARCH_TIME: 20000 // 2 horas ventana de búsqueda
         };
 
         this.inicializarIndices();
