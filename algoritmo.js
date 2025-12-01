@@ -79,7 +79,7 @@ class TransportePlanificador {
     constructor(db) {
         this.db = db;
         // Configuración "sin limites" como pediste, pero con valores sanos para evitar bucles infinitos
-        this.MAX_WALK_DISTANCE_KM = 5.0; // Caminata máxima permitida entre paradas (5km es bastante)
+        this.MAX_WALK_DISTANCE_KM = 100.0; // Caminata máxima permitida entre paradas (5km es bastante)
         this.WALK_SPEED_MPS = 1.1; // Velocidad promedio caminando (metros por segundo) ~4km/h
         this.TRANSFER_PENALTY_SECONDS = 60; // Penalización pequeña para preferir rutas con menos transbordos si el tiempo es igual
     }
