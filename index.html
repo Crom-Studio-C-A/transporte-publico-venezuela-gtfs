@@ -72,6 +72,11 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <!-- ========================================== -->
+    <!-- IMPORTAR EL NUEVO ALGORITMO                -->
+    <!-- ========================================== -->
+    <script src="algoritmo.js"></script>
+
+    <!-- ========================================== -->
     <!-- TELEMETRÍA GOOGLE ANALYTICS (Gtag.js)      -->
     <!-- ========================================== -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZLR7GZW3KP"></script>
@@ -358,44 +363,52 @@
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
-        .resultado-viaje h3 {
+        /* Ajuste para el nuevo estilo de reporte */
+        .resultado-viaje .viaje-header {
             background: var(--color-activo);
             padding: 16px 20px;
-            margin: 0;
-            font-size: 18px;
             display: flex;
             justify-content: space-between;
-        }
-        .resultado-viaje h3 span {
-            font-weight: 500;
-            color: var(--color-texto-secundario);
-        }
-        .resultado-viaje h3 .tarifa-total {
-            font-weight: 700;
-            color: var(--color-primario);
-        }
-        
-        .resultado-viaje .detalles {
-            padding: 20px;
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            gap: 16px;
-            font-size: 16px;
         }
-        .resultado-viaje .hora {
-            font-size: 22px;
-            font-weight: 700;
-            font-family: monospace;
-        }
-        .resultado-viaje .parada {
+        .resultado-viaje .viaje-header .resumen {
+            font-size: 18px;
             font-weight: 600;
         }
-        .resultado-viaje .duracion {
-            text-align: center;
-            font-size: 14px;
-            color: var(--color-texto-secundario);
+        .resultado-viaje .viaje-header .costo {
+            font-weight: 700;
+            color: var(--color-primario);
+            font-size: 18px;
         }
+        
+        .paso-viaje {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-borde);
+            display: grid;
+            grid-template-columns: 50px 1fr auto;
+            gap: 15px;
+        }
+        .paso-viaje:last-child { border-bottom: none; }
+        
+        .paso-icon {
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-fondo);
+            border-radius: 50%;
+            width: 40px; height: 40px;
+        }
+        
+        .paso-info h4 { margin: 0 0 5px 0; color: var(--color-texto); }
+        .paso-info p { margin: 0; font-size: 14px; color: var(--color-texto-secundario); }
+        .paso-tiempo {
+            text-align: right;
+            font-family: monospace;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
         .transbordo-conector {
             text-align: center;
             font-size: 14px;
@@ -1036,7 +1049,7 @@
                         <div class="autocomplete-list" id="plan-destino-list"></div>
                     </div>
                     
-                    <button id="btn-buscar-ruta">Buscar Ruta</button>
+                    <button id="btn-buscar-ruta">Buscar Ruta Óptima</button>
                 </div>
                 
                 <div id="planificador-resultados">
@@ -1236,8 +1249,6 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 "domingo": "sunday", "lunes": "monday", "martes": "tuesday",
                 "miercoles": "wednesday", "jueves": "thursday", "viernes": "friday", "sabado": "saturday"
             };
-            const MIN_TIEMPO_TRANSBORDO_SEGUNDOS = 20 * 60; // 20 minutos
-            const MAX_DISTANCIA_TRANSBORDO_KM = 20; // 10km para transbordos
             const MAX_DISTANCIA_CERCANA_KM = 2.0; // 2km para "Paradas Cerca de Mí"
             
             // --- DOM REFS ---
@@ -1353,6 +1364,9 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 mapaInicializado: false,
                 directorioMapa: null 
             };
+            // Instancia del Planificador
+            let planificador = null;
+
             const esMovil = () => window.innerWidth <= 768;
 
             // --- LOGGING ---
@@ -1568,6 +1582,14 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                         db.stopTimesPorParada.get(st.stop_id).push(st);
                     });
                     logDebug(`Índice creado para ${db.stopTimesPorParada.size} paradas (incl. andenes).`, 'ok');
+
+                    // --- INICIALIZAR EL PLANIFICADOR ---
+                    if (window.TransportePlanificador) {
+                        planificador = new TransportePlanificador(db);
+                        logDebug("Algoritmo de planificación cargado.", 'ok');
+                    } else {
+                        console.error("No se encontró la clase TransportePlanificador. Verifique algoritmo.js");
+                    }
 
                     logDebug("Base de datos en memoria creada.", 'ok');
                     dom.estadoCarga.style.display = "none";
@@ -2437,7 +2459,7 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 dom.directorioDetalleContainer.style.display = 'block';
             }
             
-            // --- PLANIFICADOR (v3 - TRANSBORDO ESPACIAL/TEMPORAL) ---
+            // --- PLANIFICADOR (LÓGICA NUEVA IMPORTADA) ---
             
             function popularDropdownsPlanificador() {
                 const paradasOrdenadas = [...db.paradasPrincipales.values()]
@@ -2447,11 +2469,6 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 dom.planOrigenList.innerHTML = '';
                 dom.planDestinoList.innerHTML = '';
                 
-                paradasOrdenadas.forEach(stop => {
-                    // No es necesario poblar los <select> ocultos
-                });
-                logDebug("Listas de autocomplete listas.", 'ok');
-
                 // --- NUEVO: Lógica de Autocomplete ---
                 configurarAutocomplete(dom.planOrigenInput, dom.planOrigenId, dom.planOrigenList);
                 configurarAutocomplete(dom.planDestinoInput, dom.planDestinoId, dom.planDestinoList);
@@ -2530,269 +2547,21 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                     diaNombre: diaNombreConAcento.charAt(0).toUpperCase() + diaNombreConAcento.slice(1)
                 };
             }
-            
-            function esViajeValido(tripId, diaField, fecha) {
-                const trip = db.trips.get(tripId);
-                if (!trip) return false;
-                
-                const calendario = db.calendar.get(trip.service_id);
-                if (!calendario) return false;
-                
-                const esDiaValido = calendario[diaField] === 1;
-                const estaEnRango = fecha >= calendario.start_date && fecha <= calendario.end_date;
-                
-                return esDiaValido && estaEnRango;
-            }
-
-            // MODIFICADO: Con lógica de Frecuencia y Andenes
-            function encontrarRutasDirectas(origenId, destinoId, tiempo) {
-                const { segundosInicio, diaField, fechaYYYYMMDD } = tiempo;
-                let resultados = [];
-                
-                const paradasOrigenHijas = db.paradasPadreHijas.get(origenId) || [origenId];
-                const paradasDestinoHijas = db.paradasPadreHijas.get(destinoId) || [destinoId];
-
-                let salidasPosibles = [];
-                paradasOrigenHijas.forEach(id => {
-                    salidasPosibles = salidasPosibles.concat(db.stopTimesPorParada.get(id) || []);
-                });
-
-                for (const stOrigen of salidasPosibles) {
-                    if (!esViajeValido(stOrigen.trip_id, diaField, fechaYYYYMMDD)) continue;
-                    
-                    const freqs = db.frequencies.get(stOrigen.trip_id) || [];
-                    const trip = db.trips.get(stOrigen.trip_id);
-                    const route = db.routes.get(trip.route_id);
-                    const tarifaInfo = db.tarifas.get(route.route_id) || { num: 0, moneda: 'Bs.' };
-
-                    const stDestino = db.stopTimes.find(st => 
-                        st.trip_id === stOrigen.trip_id && 
-                        paradasDestinoHijas.includes(st.stop_id) && 
-                        st.stop_sequence > stOrigen.stop_sequence
-                    );
-                    if (!stDestino) continue;
-
-                    if (freqs.length > 0) {
-                        // Lógica de Frecuencia
-                        const st_inicial = db.stopTimes.find(s => s.trip_id === stOrigen.trip_id && s.stop_sequence === 1);
-                        if (!st_inicial) continue;
-                        
-                        const offsetOrigen = aSegundos(stOrigen.departure_time) - aSegundos(st_inicial.departure_time);
-                        const offsetDestino = aSegundos(stDestino.arrival_time) - aSegundos(st_inicial.departure_time);
-                        
-                        for (const freq of freqs) {
-                            const startService = aSegundos(freq.start_time);
-                            const endService = aSegundos(freq.end_time);
-                            const headway = freq.headway_secs;
-
-                            let t = startService;
-                            while (t + offsetOrigen < segundosInicio) {
-                                t += headway;
-                            }
-                            
-                            const segundosSalida = t + offsetOrigen;
-                            if (segundosSalida < endService + offsetOrigen) {
-                                const segundosLlegada = t + offsetDestino;
-                                resultados.push({
-                                    tipo: 'directo',
-                                    tramos: [{
-                                        rutaNombre: route.route_short_name,
-                                        rutaCompleta: route.route_long_name,
-                                        destinoViaje: trip.trip_headsign,
-                                        horaSalida: segundosAHora(segundosSalida),
-                                        segundosSalida: segundosSalida,
-                                        paradaOrigen: db.stops.get(origenId).stop_name,
-                                        horaLlegada: segundosAHora(segundosLlegada),
-                                        segundosLlegada: segundosLlegada,
-                                        paradaDestino: db.stops.get(destinoId).stop_name,
-                                        duracion: segundosAFormato(segundosLlegada - segundosSalida),
-                                        tarifa: tarifaInfo.num,
-                                        moneda: tarifaInfo.moneda
-                                    }],
-                                    segundosLlegadaFinal: segundosLlegada
-                                });
-                            }
-                        }
-                    } else {
-                        // Lógica de Horario Fijo
-                        const segundosSalida = aSegundos(stOrigen.departure_time);
-                        if (segundosSalida < segundosInicio) continue;
-                        
-                        const segundosLlegada = aSegundos(stDestino.arrival_time);
-                        resultados.push({
-                            tipo: 'directo',
-                            tramos: [{
-                                rutaNombre: route.route_short_name,
-                                rutaCompleta: route.route_long_name,
-                                destinoViaje: trip.trip_headsign,
-                                horaSalida: stOrigen.departure_time,
-                                segundosSalida: segundosSalida,
-                                paradaOrigen: db.stops.get(origenId).stop_name,
-                                horaLlegada: stDestino.arrival_time,
-                                segundosLlegada: segundosLlegada,
-                                paradaDestino: db.stops.get(destinoId).stop_name,
-                                duracion: segundosAFormato(segundosLlegada - segundosSalida),
-                                tarifa: tarifaInfo.num,
-                                moneda: tarifaInfo.moneda
-                            }],
-                            segundosLlegadaFinal: segundosLlegada
-                        });
-                    }
-                }
-                return resultados;
-            }
-            
-            function encontrarRutasConTransbordo(origenId, destinoId, tiempo) {
-                const { segundosInicio, diaField, fechaYYYYMMDD } = tiempo;
-                let resultados = [];
-                
-                const paradasOrigenHijas = db.paradasPadreHijas.get(origenId) || [origenId];
-                const paradasDestinoHijas = db.paradasPadreHijas.get(destinoId) || [destinoId];
-
-                let salidasTramo1 = [];
-                paradasOrigenHijas.forEach(id => {
-                    salidasTramo1 = salidasTramo1.concat(db.stopTimesPorParada.get(id) || []);
-                });
-
-                // TRAMO 1
-                for (const stOrigen of salidasTramo1) {
-                    if (db.frequencies.has(stOrigen.trip_id)) continue; 
-                    
-                    const segundosSalida1 = aSegundos(stOrigen.departure_time);
-                    if (segundosSalida1 < segundosInicio) continue;
-                    if (!esViajeValido(stOrigen.trip_id, diaField, fechaYYYYMMDD)) continue;
-                    
-                    const trip1 = db.trips.get(stOrigen.trip_id);
-                    const route1 = db.routes.get(trip1.route_id);
-                    const tarifaInfo1 = db.tarifas.get(route1.route_id) || { num: 0, moneda: 'Bs.' };
-
-                    const paradasTramo1 = db.stopTimes.filter(st => 
-                        st.trip_id === stOrigen.trip_id && 
-                        st.stop_sequence > stOrigen.stop_sequence
-                    );
-                    
-                    for (const stTransbordo1 of paradasTramo1) {
-                        const paradaB_Id = stTransbordo1.stop_id; 
-                        const paradaB_Padre_Id = db.stops.get(paradaB_Id).parent_station || paradaB_Id;
-                        
-                        if (paradasDestinoHijas.includes(paradaB_Id)) continue; 
-                        
-                        const paradaB_Coords = db.stops.get(paradaB_Id);
-                        if (!paradaB_Coords) continue;
-                        
-                        const segundosLlegada1 = aSegundos(stTransbordo1.arrival_time);
-                        
-                        // TRAMO 2: Buscar paradas cercanas
-                        for (const paradaD of db.paradasPrincipales.values()) {
-                            if (paradaD.stop_id === origenId) continue;
-                            
-                            const dist = getDistanciaHaversine(paradaB_Coords.stop_lat, paradaB_Coords.stop_lon, paradaD.stop_lat, paradaD.stop_lon);
-                            
-                            if (dist <= MAX_DISTANCIA_TRANSBORDO_KM) {
-                                
-                                for (let diaOffset2 = 0; diaOffset2 < 7; diaOffset2++) {
-                                    const tiempoLlegada1 = getDatosDeTiempo(0);
-                                    tiempoLlegada1.fechaYYYYMMDD = fechaYYYYMMDD;
-                                    
-                                    const tiempo2 = getDatosDeTiempo(diaOffset2);
-                                    
-                                    if (tiempo2.fechaYYYYMMDD < tiempoLlegada1.fechaYYYYMMDD) continue;
-                                    
-                                    let segundosInicio2 = 0;
-                                    if (tiempo2.fechaYYYYMMDD === tiempoLlegada1.fechaYYYYMMDD) {
-                                        segundosInicio2 = segundosLlegada1 + MIN_TIEMPO_TRANSBORDO_SEGUNDOS;
-                                    }
-                                    
-                                    const paradasDHijas = db.paradasPadreHijas.get(paradaD.stop_id) || [paradaD.stop_id];
-                                    let salidasTramo2 = [];
-                                    paradasDHijas.forEach(id => {
-                                        salidasTramo2 = salidasTramo2.concat(db.stopTimesPorParada.get(id) || []);
-                                    });
-                                    
-                                    for (const stOrigen2 of salidasTramo2) {
-                                        if (db.frequencies.has(stOrigen2.trip_id)) continue; 
-                                        
-                                        const segundosSalida2 = aSegundos(stOrigen2.departure_time);
-                                        
-                                        if (segundosSalida2 < segundosInicio2) continue;
-                                        if (!esViajeValido(stOrigen2.trip_id, tiempo2.diaField, tiempo2.fechaYYYYMMDD)) continue;
-                                        
-                                        const stDestinoFinal = db.stopTimes.find(st => 
-                                            st.trip_id === stOrigen2.trip_id &&
-                                            paradasDestinoHijas.includes(st.stop_id) &&
-                                            st.stop_sequence > stOrigen2.stop_sequence
-                                        );
-                                        
-                                        if (stDestinoFinal) {
-                                            const trip2 = db.trips.get(stOrigen2.trip_id);
-                                            const route2 = db.routes.get(trip2.route_id);
-                                            const segundosLlegada2 = aSegundos(stDestinoFinal.arrival_time);
-                                            const tarifaInfo2 = db.tarifas.get(route2.route_id) || { num: 0, moneda: 'Bs.' };
-                                            
-                                            let fecha1 = new Date(tiempoLlegada1.fechaYYYYMMDD.toString().replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
-                                            let fecha2 = new Date(tiempo2.fechaYYYYMMDD.toString().replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'));
-                                            const diffTime = Math.abs(fecha2 - fecha1);
-                                            const diasEspera = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                                            
-                                            const segundosEsperaTotal = (diasEspera * 86400) + segundosSalida2 - segundosLlegada1;
-
-                                            resultados.push({
-                                                tipo: 'transbordo',
-                                                tramos: [
-                                                    { 
-                                                        rutaNombre: route1.route_short_name,
-                                                        rutaCompleta: route1.route_long_name,
-                                                        destinoViaje: trip1.trip_headsign,
-                                                        horaSalida: stOrigen.departure_time,
-                                                        paradaOrigen: db.stops.get(origenId).stop_name,
-                                                        horaLlegada: stTransbordo1.arrival_time,
-                                                        paradaDestino: db.stops.get(paradaB_Padre_Id).stop_name,
-                                                        duracion: segundosAFormato(segundosLlegada1 - segundosSalida1),
-                                                        tarifa: tarifaInfo1.num,
-                                                        moneda: tarifaInfo1.moneda
-                                                    },
-                                                    {
-                                                        rutaNombre: route2.route_short_name,
-                                                        rutaCompleta: route2.route_long_name,
-                                                        destinoViaje: trip2.trip_headsign,
-                                                        horaSalida: stOrigen2.departure_time,
-                                                        paradaOrigen: paradaD.stop_name,
-                                                        horaLlegada: stDestinoFinal.arrival_time,
-                                                        paradaDestino: db.stops.get(destinoId).stop_name,
-                                                        duracion: segundosAFormato(segundosLlegada2 - segundosSalida2),
-                                                        tarifa: tarifaInfo2.num,
-                                                        moneda: tarifaInfo2.moneda
-                                                    }
-                                                ],
-                                                paradaTransbordo: db.stops.get(paradaB_Padre_Id).stop_name,
-                                                paradaTransbordo2: paradaD.stop_name,
-                                                distanciaTransbordo: dist.toFixed(2),
-                                                tiempoEspera: segundosAFormato(segundosEsperaTotal),
-                                                diasEspera: diasEspera,
-                                                segundosLlegadaFinal: (diasEspera * 86400) + segundosLlegada2
-                                            });
-                                            
-                                            break; 
-                                        }
-                                    }
-                                    if (resultados.length > 0 && resultados[resultados.length-1].tipo === 'transbordo') break;
-                                }
-                            }
-                        }
-                    }
-                }
-                return resultados;
-            }
 
             function buscarRutaGTFS() {
-                const origenId = dom.planOrigenId.value; // <-- Usar el ID del input oculto
-                const destinoId = dom.planDestinoId.value; // <-- Usar el ID del input oculto
+                const origenId = dom.planOrigenId.value; 
+                const destinoId = dom.planDestinoId.value; 
                 
-                dom.planResultados.innerHTML = '';
+                dom.planResultados.innerHTML = '<div class="status-loading" style="padding:20px;">Calculando mejor ruta...</div>';
                 logDebug(`Buscando ruta de ${origenId} a ${destinoId}...`, 'info');
 
                 if (!origenId || !destinoId || origenId === destinoId) {
                     dom.planResultados.innerHTML = `<h3 style="color: var(--color-alerta-texto); text-align: center;">Por favor seleccione un origen y un destino válidos.</h3>`;
+                    return;
+                }
+                
+                if (!planificador) {
+                    dom.planResultados.innerHTML = `<h3 style="color:red; text-align: center;">Error: El planificador no se cargó correctamente.</h3>`;
                     return;
                 }
 
@@ -2802,121 +2571,103 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                     'destination_id': destinoId
                 });
                 
-                let todosLosResultados = [];
-                let diaBusqueda = 0; 
-                
-                while (diaBusqueda < 7) {
-                    let tiempo = getDatosDeTiempo(diaBusqueda);
-                    let diaNombre = (diaBusqueda === 0) ? "Hoy" : (diaBusqueda === 1) ? "Mañana" : tiempo.diaNombre;
-                    
-                    logDebug(`Buscando para ${diaNombre} (Offset: ${diaBusqueda}, Día: ${tiempo.diaField}, Fecha: ${tiempo.fechaYYYYMMDD})`, 'info');
-                    
-                    let resultadosDirectos = encontrarRutasDirectas(origenId, destinoId, tiempo);
-                    let resultadosTransbordo = encontrarRutasConTransbordo(origenId, destinoId, tiempo);
-                    
-                    let resultadosDelDia = [...resultadosDirectos, ...resultadosTransbordo];
-                    
-                    if (resultadosDelDia.length > 0) {
-                        resultadosDelDia.sort((a, b) => a.segundosLlegadaFinal - b.segundosLlegadaFinal);
+                // Usar setTimeout para permitir que el UI muestre "Cargando" antes de bloquear el hilo
+                setTimeout(() => {
+                    let resultadosEncontrados = false;
+                    let html = '';
+
+                    // Buscar en los próximos 7 días hasta encontrar UNA ruta válida
+                    // (Dijkstra es costoso, no buscamos todos los días a la vez)
+                    for (let dia = 0; dia < 7; dia++) {
+                        const tiempo = getDatosDeTiempo(dia);
+                        const diaNombre = (dia === 0) ? "Hoy" : (dia === 1) ? "Mañana" : tiempo.diaNombre;
                         
-                        todosLosResultados.push({
-                            diaNombre: diaNombre,
-                            resultados: resultadosDelDia
-                        });
-                    }
-                    
-                    diaBusqueda++;
-                }
-                
-                renderizarResultadosPlan(todosLosResultados);
-            }
-            
-            function renderizarResultadosPlan(resultadosPorDia) {
-                
-                if (resultadosPorDia.length === 0) {
-                    dom.planResultados.innerHTML = `<h3 style="color: var(--color-texto-secundario); text-align: center; margin-top: 40px;">
-                        No se encontraron rutas que cumplan los criterios en los próximos 7 días.
-                    </h3>`;
-                    logDebug("No se encontraron rutas.", 'warn');
-                    return;
-                }
-                
-                logDebug(`Renderizando ${resultadosPorDia.length} días con resultados.`, 'ok');
-                
-                let html = ``;
-                
-                resultadosPorDia.forEach(diaData => {
-                    let titulo = `Próximos Viajes (${diaData.diaNombre})`;
-                    let esManana = diaData.diaNombre === "Mañana";
-                    
-                    html += `<h2 class="${esManana ? 'manana' : ''}">${titulo}</h2>`;
-                    
-                    diaData.resultados.slice(0, 3).forEach(r => {
-                        
-                        let tarifas = {};
-                        r.tramos.forEach(t => {
-                            const moneda = t.moneda || 'Bs.';
-                            if (!tarifas[moneda]) tarifas[moneda] = 0;
-                            tarifas[moneda] += t.tarifa;
-                        });
-                        let tarifaStr = Object.keys(tarifas).map(moneda => 
-                            `${tarifas[moneda].toFixed(2)} ${moneda}`
-                        ).join(' + ');
-                        if (tarifaStr === "0.00 Bs.") tarifaStr = "Consulte en taquilla";
-                        
-                        html += `<div class="resultado-viaje">`;
-                        
-                        r.tramos.forEach((tramo, index) => {
-                            const icon = (tramo.rutaNombre.includes("Línea")) ? '🚇' : '🚌';
+                        logDebug(`Probando día: ${diaNombre}`, 'info');
+
+                        const ruta = planificador.buscarRuta(
+                            origenId, 
+                            destinoId, 
+                            tiempo.fechaYYYYMMDD, 
+                            tiempo.segundosInicio, 
+                            tiempo.diaField
+                        );
+
+                        if (ruta) {
+                            resultadosEncontrados = true;
+                            const esManana = diaNombre === "Mañana";
+                            
+                            html += `<h2 class="${esManana ? 'manana' : ''}">Mejor Ruta para ${diaNombre}</h2>`;
+                            
+                            html += `<div class="resultado-viaje">`;
                             html += `
-                                <h3>
-                                    ${icon} ${tramo.rutaNombre}: ${tramo.destinoViaje}
-                                    <span class="tarifa-total">${index === 0 ? `Total Aprox: ${tarifaStr}` : ''}</span>
-                                </h3>
-                                <div class="detalles">
-                                    <div>
-                                        <span class="hora">${tramo.horaSalida}</span>
-                                        <div class="parada">${tramo.paradaOrigen}</div>
+                                <div class="viaje-header">
+                                    <div class="resumen">
+                                        ⏱ Total: ${ruta.duracionTotal} 
+                                        <span style="font-weight:400; font-size: 0.9em; color: #555;">(${ruta.transbordos} transbordos)</span>
                                     </div>
-                                    <div class="duracion">
-                                        ➔
-                                        <br>
-                                        ${tramo.duracion}
-                                    </div>
-                                    <div style="text-align: right;">
-                                        <span class="hora">${tramo.horaLlegada}</span>
-                                        <div class="parada">${tramo.paradaDestino}</div>
-                                    </div>
+                                    <div class="costo">${ruta.costoTotal}</div>
                                 </div>
                             `;
                             
-                            if (r.tipo === 'transbordo' && index < r.tramos.length - 1) {
-                                let espera = (r.diasEspera > 0) ? ` (Espera de ${r.diasEspera} día${r.diasEspera > 1 ? 's' : ''})` : ` (Espera: ${r.tiempoEspera})`;
-                                let distancia = r.distanciaTransbordo > 0 ? `Caminar/Taxi ${r.distanciaTransbordo} km` : 'En la misma parada';
-                                
-                                html += `
-                                    <div class="transbordo-conector">
-                                        ▼ Transbordo en <strong>${r.paradaTransbordo}</strong><br>
-                                        <small>${distancia} a <strong>${r.paradaTransbordo2}</strong>${espera}</small> ▼
-                                    </div>
-                                `;
-                            }
-                        });
-                        
-                        html += `</div>`;
-                    });
-                });
-                
-                dom.planResultados.innerHTML = html;
+                            ruta.pasos.forEach(paso => {
+                                if (paso.tipo === 'caminata') {
+                                    html += `
+                                        <div class="paso-viaje">
+                                            <div class="paso-icon">🚶</div>
+                                            <div class="paso-info">
+                                                <h4>Caminar (${paso.distancia})</h4>
+                                                <p>Desde <strong>${paso.origen}</strong> hasta <strong>${paso.destino}</strong></p>
+                                                <p>${paso.instruccion}</p>
+                                            </div>
+                                            <div class="paso-tiempo">
+                                                ${paso.duracion}
+                                            </div>
+                                        </div>
+                                    `;
+                                } else {
+                                    const icon = (paso.route.route_type == 1) ? '🚇' : '🚌';
+                                    html += `
+                                        <div class="paso-viaje">
+                                            <div class="paso-icon">${icon}</div>
+                                            <div class="paso-info">
+                                                <h4>${paso.route.route_short_name} - ${paso.trip.trip_headsign}</h4>
+                                                <p>Sube en: <strong>${paso.origen}</strong> (${paso.horaSalida})</p>
+                                                <p>Baja en: <strong>${paso.destino}</strong> (${paso.horaLlegada})</p>
+                                                <p style="color: green; font-weight:500;">Tarifa: ${paso.precio}</p>
+                                            </div>
+                                            <div class="paso-tiempo">
+                                                ${paso.duracion}
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            });
+                            
+                            html += `<div style="padding:15px; background:#f8f9fa; border-top:1px solid #dee2e6; text-align:right;">
+                                <strong>Llegada estimada: ${ruta.horaLlegada}</strong>
+                            </div>`;
+                            
+                            html += `</div>`;
+                            
+                            // Si encontramos ruta, paramos de buscar en días futuros
+                            break;
+                        }
+                    }
+
+                    if (!resultadosEncontrados) {
+                        html = `<h3 style="color: var(--color-texto-secundario); text-align: center; margin-top: 40px;">
+                            No se encontraron rutas posibles en los próximos 7 días.
+                        </h3>`;
+                    }
+                    
+                    dom.planResultados.innerHTML = html;
+                }, 50);
             }
-            
 
             // --- INICIAR ---
             main();
             window.addEventListener('resize', () => mostrarPanelHorarios(esMovil() ? 'panel-rutas' : 'panel-rutas'));
         });
     </script>
-
-
 </body>
 </html>
