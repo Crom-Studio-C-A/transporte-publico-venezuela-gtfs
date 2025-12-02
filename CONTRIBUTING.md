@@ -9,20 +9,20 @@ Lo mejor de todo es que **no necesitas ser programador** para ayudar. La parte m
 
 ## 📋 Tabla de Contenidos
 
-1.  [Código de Conducta](https://www.google.com/search?q=%23-c%C3%B3digo-de-conducta "null")
+1.  [Código de Conducta](https://github.com/Crom-Studio-C-A/transporte-publico-venezuela-gtfs/blob/main-web/CONTRIBUTING.md#-c%C3%B3digo-de-conducta "null")
     
-2.  [¿Cómo puedo ayudar?](https://www.google.com/search?q=%23-c%C3%B3mo-puedo-ayudar "null")
+2.  [¿Cómo puedo ayudar?](https://github.com/Crom-Studio-C-A/transporte-publico-venezuela-gtfs/blob/main-web/CONTRIBUTING.md#-c%C3%B3mo-puedo-ayudar "null")
     
-    -   [Reportar Errores de Datos](https://www.google.com/search?q=%23reportar-errores-de-datos "null")
+    -   [Reportar Errores de Datos](https://github.com/Crom-Studio-C-A/transporte-publico-venezuela-gtfs/blob/main-web/CONTRIBUTING.md#reportar-errores-de-datos "null")
         
-    -   [Mappers: Agregar o Editar Rutas (GTFS)](https://www.google.com/search?q=%23mappers-agregar-o-editar-rutas-gtfs "null")
-    - [Convertir de Open Street Maps a GTFS (Opción Fácil)](https://www.google.com/search?q=%23mappers-agregar-o-editar-rutas-gtfs "null")
+    -   [Mappers: Agregar o Editar Rutas (GTFS)](https://github.com/Crom-Studio-C-A/transporte-publico-venezuela-gtfs/blob/main-web/CONTRIBUTING.md#mappers-agregar-o-editar-rutas-gtfs "null")
+    - [Convertir de Open Street Maps a GTFS (Opción Fácil)](https://github.com/Crom-Studio-C-A/transporte-publico-venezuela-gtfs/blob/main-web/CONTRIBUTING.md#convertir-de-open-street-maps-a-gtfs-opci%C3%B3n-f%C3%A1cil "null")
         
-3.  [Guía de Estilo para Datos (GTFS)](https://www.google.com/search?q=%23-gu%C3%ADa-de-estilo-para-datos-gtfs "null")
+3.  [Guía de Estilo para Datos (GTFS)](https://github.com/Crom-Studio-C-A/transporte-publico-venezuela-gtfs/blob/main-web/CONTRIBUTING.md#-gu%C3%ADa-de-estilo-para-datos-gtfs "null")
     
-4.  [Proceso de Pull Request](https://www.google.com/search?q=%23-proceso-de-pull-request "null")
+4.  [Proceso de Pull Request](https://github.com/Crom-Studio-C-A/transporte-publico-venezuela-gtfs/blob/main-web/CONTRIBUTING.md#-proceso-de-pull-request "null")
     
-5.  [Licencias](https://www.google.com/search?q=%23-licencias "null")
+5.  [Licencias](https://github.com/Crom-Studio-C-A/transporte-publico-venezuela-gtfs/blob/main-web/CONTRIBUTING.md#%EF%B8%8F-licencias "null")
     
 
 ## 🤝 Código de Conducta
@@ -158,7 +158,7 @@ Si ya editaste los archivos y quieres enviar tus cambios:
 
 Al contribuir a este proyecto, aceptas que:
 
--   Tus aportes de código (si los hubiera) serán licenciados bajo la **Licencia MIT**.
+-   Tus aportes de código (si los hubiera) serán licenciados bajo la **Licencia GPL-3.0**.
     
 -   Tus aportes de datos serán licenciados bajo **Creative Commons Atribución 4.0 (CC BY 4.0)**.
     
