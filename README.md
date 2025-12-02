@@ -11,6 +11,10 @@
   [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
   [![Data Standard](https://img.shields.io/badge/Standard-GTFS-blue)](https://gtfs.org/)
 
+
+![GitHub last commit](https://img.shields.io/github/last-commit/Crom-Studio-C-A/transporte-publico-venezuela-gtfs?color=%23229395&label=Last%20commit&logo=git&logoColor=%23fff&style=for-the-badge) ![GitHub contributors](https://img.shields.io/github/contributors/Crom-Studio-C-A/transporte-publico-venezuela-gtfs?color=%237acbcd&logo=github&logoColor=%23fff&style=for-the-badge) ![GitHub repo size](https://img.shields.io/github/repo-size/Crom-Studio-C-A/transporte-publico-venezuela-gtfs?color=%23229395&logo=github&logoColor=%23fff&style=for-the-badge)
+
+
 </div>
 
 ---
