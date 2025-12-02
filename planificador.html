@@ -3,400 +3,924 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open Transit Venezuela | Planificador Inteligente</title>
+    <title>Open Transit Venezuela - Planificador Geoespacial</title>
+    <!-- CSS Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <!-- Fuentes e Iconos -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- PapaParse para CSV -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- Leaflet Mapa -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Fuente Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
-    <!-- IMPORTANTE: El algoritmo separado -->
-    <script src="algoritmo.js"></script>
-
     <style>
+        /* Estilos Base (Conservando el diseño "Super Moderno") */
         :root {
-            --primary: #0d6efd;
-            --bg: #f8f9fa;
-            --card: #ffffff;
-            --text: #212529;
-            --gray: #6c757d;
+            --color-primario: #0d6efd;
+            --color-secundario: #6c757d;
+            --color-fondo: #f8f9fa;
+            --color-tarjeta: #ffffff;
+            --color-texto: #212529;
+            --color-borde: #dee2e6;
         }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--color-fondo); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Layout */
-        #app { display: flex; height: 100%; width: 100%; }
-        #sidebar { width: 400px; background: var(--card); border-right: 1px solid #ddd; display: flex; flex-direction: column; z-index: 1000; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
-        #map-container { flex-grow: 1; position: relative; }
-        #map { width: 100%; height: 100%; }
+        /* Layout Principal */
+        #app-wrapper { display: flex; height: 100%; width: 100%; position: relative; }
+        
+        /* Panel Lateral (Planificador y Resultados) */
+        #sidebar {
+            width: 400px;
+            background: var(--color-tarjeta);
+            border-right: 1px solid var(--color-borde);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        /* Contenedor del Mapa */
+        #map-container {
+            flex-grow: 1;
+            position: relative;
+        }
+        #mapa-principal { width: 100%; height: 100%; }
 
-        /* Formulario de Búsqueda */
-        .search-box { padding: 20px; background: var(--primary); color: white; }
-        .search-input-group { position: relative; margin-bottom: 12px; }
-        .search-input-group label { display: block; font-size: 12px; margin-bottom: 4px; opacity: 0.9; }
-        .search-input { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
-        .suggestions { 
-            position: absolute; top: 100%; left: 0; right: 0; 
-            background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
-            z-index: 2000; max-height: 200px; overflow-y: auto; display: none;
+        /* Header del Sidebar */
+        .sidebar-header {
+            padding: 20px;
+            background: var(--color-primario);
+            color: white;
         }
-        .suggestion-item { padding: 10px; border-bottom: 1px solid #eee; color: #333; cursor: pointer; font-size: 14px; }
-        .suggestion-item:hover { background: #f1f1f1; }
+        .sidebar-header h1 { margin: 0; font-size: 1.2rem; }
         
-        .btn-search { width: 100%; padding: 12px; background: #0b5ed7; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-search:hover { background: #0a58ca; }
+        /* Formulario Planificador */
+        .planificador-form {
+            padding: 20px;
+            border-bottom: 1px solid var(--color-borde);
+            overflow-y: auto;
+        }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: var(--color-secundario); }
+        
+        /* Inputs con Iconos */
+        .input-wrapper { display: flex; gap: 5px; }
+        .input-wrapper input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid var(--color-borde);
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        .btn-icon {
+            padding: 0 12px;
+            background: #e9ecef;
+            border: 1px solid var(--color-borde);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-icon:hover { background: #dde0e3; }
+        .btn-icon.active { background: var(--color-primario); color: white; border-color: var(--color-primario); }
+
+        button.btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--color-primario);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button.btn-primary:hover { background: #0b5ed7; }
 
         /* Resultados */
-        #results { flex-grow: 1; overflow-y: auto; padding: 20px; background: #f4f6f8; }
-        .route-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; border: 1px solid #eee; }
-        .route-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-color: var(--primary); }
+        #resultados-lista {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f1f3f5;
+        }
+        .paso-ruta {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--color-secundario);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .paso-ruta:hover { transform: translateY(-2px); }
+        .paso-ruta.bus { border-left-color: var(--color-primario); }
+        .paso-ruta.walk { border-left-color: #198754; }
         
-        .route-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
-        .route-duration { font-size: 18px; font-weight: 700; color: var(--text); }
-        .route-cost { font-size: 14px; color: var(--gray); background: #eee; padding: 2px 8px; border-radius: 12px; }
-
-        /* Timeline de Pasos (Estilo Google Maps) */
-        .leg { display: flex; gap: 12px; position: relative; padding-bottom: 20px; }
-        .leg:last-child { padding-bottom: 0; }
-        .leg-time { width: 50px; text-align: right; font-size: 12px; color: var(--text); font-weight: 600; flex-shrink: 0; }
+        .paso-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .paso-titulo { font-weight: 700; color: var(--color-texto); }
+        .paso-hora { font-family: monospace; font-weight: 600; }
+        .paso-detalle { font-size: 0.9rem; color: #555; }
         
-        .leg-line-container { display: flex; flex-direction: column; align-items: center; width: 20px; flex-shrink: 0; }
-        .leg-dot { width: 12px; height: 12px; border-radius: 50%; background: #ccc; border: 2px solid white; box-shadow: 0 0 0 1px #ccc; z-index: 2; }
-        .leg-line { width: 4px; flex-grow: 1; background: #e9ecef; margin-top: -2px; margin-bottom: -2px; }
-        
-        /* Colores por modo */
-        .mode-WALK .leg-line { border-left: 2px dotted #aaa; background: transparent; width: 0; }
-        .mode-BUS .leg-line { background: var(--primary); }
-        .mode-BUS .leg-dot { background: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+        .resumen-viaje {
+            background: #e7f1ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #b6d4fe;
+        }
 
-        .leg-details { flex-grow: 1; font-size: 14px; }
-        .leg-title { font-weight: 600; margin-bottom: 4px; }
-        .leg-desc { font-size: 13px; color: var(--gray); margin-bottom: 4px; }
-        .leg-instruction { background: #f8f9fa; padding: 8px; border-radius: 6px; font-size: 12px; color: #555; }
+        /* Overlay para selección en mapa */
+        #map-overlay-msg {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 2000;
+            display: none;
+            font-weight: 500;
+        }
 
+        /* Mobile Responsive */
         @media (max-width: 768px) {
-            #app { flex-direction: column; }
-            #sidebar { width: 100%; height: 60%; order: 2; }
-            #map-container { height: 40%; order: 1; }
+            #app-wrapper { flex-direction: column-reverse; }
+            #sidebar { width: 100%; height: 50%; border-right: none; border-top: 1px solid var(--color-borde); }
+            #map-container { height: 50%; }
         }
     </style>
 </head>
 <body>
 
-<div id="app">
-    <!-- Barra Lateral -->
-    <div id="sidebar">
-        <div class="search-box">
-            <h2 style="margin:0 0 15px 0; font-size: 18px;">🚌 Planificador de Viajes</h2>
+    <div id="app-wrapper">
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <h1>🚍 Planificador GTFS</h1>
+            </div>
             
-            <div class="search-input-group">
-                <label>Origen (Lugar, calle o parada)</label>
-                <input type="text" id="input-origin" class="search-input" placeholder="Ej. Plaza Bolívar..." autocomplete="off">
-                <input type="hidden" id="origin-lat">
-                <input type="hidden" id="origin-lon">
-                <div id="suggestions-origin" class="suggestions"></div>
+            <div class="planificador-form">
+                <!-- Origen -->
+                <div class="input-group">
+                    <label>📍 Desde (Origen)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="input-origen" placeholder="Selecciona en mapa o GPS..." readonly>
+                        <button class="btn-icon" id="btn-gps-origen" title="Usar mi ubicación GPS">📡</button>
+                        <button class="btn-icon" id="btn-map-origen" title="Seleccionar en Mapa">🗺️</button>
+                    </div>
+                    <!-- Coordenadas ocultas -->
+                    <input type="hidden" id="coord-origen-lat">
+                    <input type="hidden" id="coord-origen-lon">
+                </div>
+
+                <!-- Destino -->
+                <div class="input-group">
+                    <label>🏁 Hasta (Destino)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="input-destino" placeholder="Selecciona en mapa..." readonly>
+                        <button class="btn-icon" id="btn-map-destino" title="Seleccionar en Mapa">🗺️</button>
+                    </div>
+                    <input type="hidden" id="coord-destino-lat">
+                    <input type="hidden" id="coord-destino-lon">
+                </div>
+
+                <!-- Fecha y Hora -->
+                <div class="input-group">
+                    <label>📅 Fecha y Hora de Salida</label>
+                    <input type="datetime-local" id="input-fecha" style="width: 100%; padding: 10px; border: 1px solid var(--color-borde); border-radius: 6px;">
+                </div>
+
+                <button id="btn-calcular" class="btn-primary">🔍 Buscar Ruta Óptima</button>
             </div>
 
-            <div class="search-input-group">
-                <label>Destino</label>
-                <input type="text" id="input-dest" class="search-input" placeholder="Ej. Terminal de Pasajeros..." autocomplete="off">
-                <input type="hidden" id="dest-lat">
-                <input type="hidden" id="dest-lon">
-                <div id="suggestions-dest" class="suggestions"></div>
+            <div id="resultados-lista">
+                <div style="text-align: center; color: #888; margin-top: 20px;">
+                    Configura tu origen, destino y fecha para ver la ruta.
+                </div>
             </div>
-
-            <button class="btn-search" onclick="buscarRuta()">Buscar Mejor Ruta</button>
         </div>
 
-        <div id="results">
-            <div style="text-align: center; color: #888; margin-top: 40px;">
-                <p>Cargando datos GTFS...</p>
-                <p style="font-size: 12px;">Por favor espere.</p>
-            </div>
+        <!-- Mapa -->
+        <div id="map-container">
+            <div id="mapa-principal"></div>
+            <div id="map-overlay-msg">Haz click en el mapa para definir la ubicación</div>
         </div>
     </div>
 
-    <!-- Mapa -->
-    <div id="map-container">
-        <div id="map"></div>
-    </div>
-</div>
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="algoritmo.js"></script> <!-- Archivo modificado -->
 
-<script>
-    // --- VARIABLES GLOBALES ---
-    const gtfsBaseUrl = "https://transporte.cromstudio.com.ve/data/";
-    const db = {
-        routes: new Map(), trips: new Map(), stops: new Map(),
-        calendar: new Map(), stopTimes: [], tarifas: new Map(),
-        paradasPrincipales: new Map(), tripStopTimesMap: new Map()
-    };
-    let router = null;
-    let map = null;
-    let routeLayers = null;
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            // --- 1. Inicialización del Mapa ---
+            const map = L.map('mapa-principal').setView([9.0, -69.0], 6); // Centro Venezuela aprox
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
 
-    // --- INICIALIZACIÓN ---
-    document.addEventListener("DOMContentLoaded", async () => {
-        initMap();
-        await loadGTFS();
-    });
+            // Capa para los resultados de la ruta
+            let routeLayer = L.layerGroup().addTo(map);
+            // Marcadores de Origen y Destino
+            let markerOrigen = null;
+            let markerDestino = null;
+            // Estado de selección
+            let selectingMode = null; // 'origen' o 'destino'
 
-    function initMap() {
-        map = L.map('map').setView([9.0, -69.0], 7); // Centro de Vzla aprox
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-        routeLayers = L.layerGroup().addTo(map);
-        
-        // Setup Autocomplete
-        setupAutocomplete('input-origin', 'suggestions-origin', 'origin-lat', 'origin-lon');
-        setupAutocomplete('input-dest', 'suggestions-dest', 'dest-lat', 'dest-lon');
-    }
+            // --- 2. Carga de Datos GTFS (Simplificada para demo) ---
+            const gtfsBaseUrl = "https://transporte.cromstudio.com.ve/data/";
+            const db = { 
+                stops: new Map(), routes: new Map(), trips: new Map(), 
+                stopTimes: [], calendar: new Map(), tarifas: new Map(), 
+                paradasPrincipales: new Map(), paradasPadreHijas: new Map(), 
+                stopTimesPorParada: new Map(), frequencies: new Map(),
+                shapes: new Map() // NUEVO: Para guardar geometría
+            };
 
-    // --- CARGA DE DATOS ---
-    async function loadGTFS() {
-        const parse = (file) => new Promise(resolve => {
-            Papa.parse(gtfsBaseUrl + file, {
-                download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
-                complete: res => resolve(res.data),
-                error: () => resolve([]) // Fallback
-            });
-        });
+            async function cargarGTFS() {
+                const fetchCsv = (file) => new Promise(resolve => {
+                    Papa.parse(gtfsBaseUrl + file, {
+                        download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+                        complete: res => resolve(res.data)
+                    });
+                });
 
-        try {
-            const [stops, routes, trips, stopTimes, calendar, tarifas] = await Promise.all([
-                parse("stops.txt"), parse("routes.txt"), parse("trips.txt"),
-                parse("stop_times.txt"), parse("calendar.txt"), parse("tarifas.txt")
-            ]);
+                document.getElementById('resultados-lista').innerHTML = '<div style="padding:20px; text-align:center">Cargando datos GTFS...</div>';
 
-            // Procesar DB
-            stops.forEach(s => {
-                db.stops.set(s.stop_id, s);
-                if (s.location_type !== 1) db.paradasPrincipales.set(s.stop_id, s);
-            });
-            routes.forEach(r => db.routes.set(r.route_id, r));
-            trips.forEach(t => db.trips.set(t.trip_id, t));
-            calendar.forEach(c => db.calendar.set(c.service_id, c));
-            tarifas.forEach(t => db.tarifas.set(t.route_id, { num: t.tarifa_num || 0, moneda: t.tipo_moneda || 'Bs.' }));
-            db.stopTimes = stopTimes;
+                const [stops, routes, trips, stopTimes, calendar, shapes] = await Promise.all([
+                    fetchCsv('stops.txt'), fetchCsv('routes.txt'), fetchCsv('trips.txt'),
+                    fetchCsv('stop_times.txt'), fetchCsv('calendar.txt'), fetchCsv('shapes.txt')
+                ]);
 
-            // Indice crítico para el algoritmo: Trip -> Lista de StopTimes ordenados
-            stopTimes.forEach(st => {
-                if (!db.tripStopTimesMap.has(st.trip_id)) db.tripStopTimesMap.set(st.trip_id, []);
-                db.tripStopTimesMap.get(st.trip_id).push(st);
-            });
-            db.tripStopTimesMap.forEach(list => list.sort((a,b) => a.stop_sequence - b.stop_sequence));
+                // Procesar Estructuras
+                stops.forEach(s => db.stops.set(s.stop_id, s));
+                routes.forEach(r => db.routes.set(r.route_id, r));
+                trips.forEach(t => db.trips.set(t.trip_id, t));
+                calendar.forEach(c => db.calendar.set(c.service_id, c));
+                db.stopTimes = stopTimes;
+                
+                // Procesar Shapes (Agrupados por shape_id)
+                shapes.forEach(sh => {
+                    if (!db.shapes.has(sh.shape_id)) db.shapes.set(sh.shape_id, []);
+                    db.shapes.get(sh.shape_id).push(sh);
+                });
+                // Ordenar puntos del shape
+                db.shapes.forEach(puntos => puntos.sort((a,b) => a.shape_pt_sequence - b.shape_pt_sequence));
 
-            // INICIALIZAR EL MOTOR (algoritmo.js)
-            router = new TransitRouter(db);
-
-            document.getElementById('results').innerHTML = `
-                <div style="text-align: center; color: #666; margin-top: 40px;">
-                    <h3>¡Listo para viajar!</h3>
-                    <p>Selecciona origen y destino usando el buscador (OpenStreetMap).</p>
-                </div>`;
-
-        } catch (e) {
-            console.error(e);
-            alert("Error cargando datos de transporte.");
-        }
-    }
-
-    // --- GEOLOCALIZACIÓN (OSM NOMINATIM) ---
-    function setupAutocomplete(inputId, listId, latId, lonId) {
-        const input = document.getElementById(inputId);
-        const list = document.getElementById(listId);
-        let debounce = null;
-
-        input.addEventListener('input', () => {
-            clearTimeout(debounce);
-            const query = input.value;
-            if (query.length < 3) { list.style.display = 'none'; return; }
-
-            debounce = setTimeout(async () => {
-                // Búsqueda en Venezuela
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ve&limit=5`;
-                try {
-                    const res = await fetch(url);
-                    const data = await res.json();
-                    
-                    list.innerHTML = '';
-                    if (data.length === 0) {
-                        list.innerHTML = '<div class="suggestion-item">No se encontraron resultados</div>';
-                    } else {
-                        data.forEach(place => {
-                            const div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            div.textContent = place.display_name.split(',')[0]; // Mostrar solo parte principal
-                            div.addEventListener('click', () => {
-                                input.value = place.display_name.split(',')[0];
-                                document.getElementById(latId).value = place.lat;
-                                document.getElementById(lonId).value = place.lon;
-                                list.style.display = 'none';
-                                
-                                // Mover mapa
-                                map.setView([place.lat, place.lon], 15);
-                                L.marker([place.lat, place.lon]).addTo(routeLayers);
-                            });
-                            list.appendChild(div);
-                        });
+                // Índices espaciales
+                stops.forEach(s => {
+                    if (s.location_type != 0 && s.stop_name) db.paradasPrincipales.set(s.stop_id, s);
+                    if (!db.paradasPadreHijas.has(s.stop_id)) db.paradasPadreHijas.set(s.stop_id, [s.stop_id]);
+                    if (s.parent_station) {
+                        if (!db.paradasPadreHijas.has(s.parent_station)) db.paradasPadreHijas.set(s.parent_station, [s.parent_station]);
+                        db.paradasPadreHijas.get(s.parent_station).push(s.stop_id);
                     }
-                    list.style.display = 'block';
-                } catch (e) { console.error("Error geocoding", e); }
-            }, 500); // Esperar 500ms antes de buscar
-        });
-        
-        // Cerrar al hacer click fuera
-        document.addEventListener('click', (e) => {
-            if (e.target !== input) list.style.display = 'none';
-        });
-    }
+                });
+                
+                stopTimes.forEach(st => {
+                    if (!db.stopTimesPorParada.has(st.stop_id)) db.stopTimesPorParada.set(st.stop_id, []);
+                    db.stopTimesPorParada.get(st.stop_id).push(st);
+                });
 
-    // --- BÚSQUEDA Y RENDERIZADO ---
-    async function buscarRuta() {
-        const latOrg = parseFloat(document.getElementById('origin-lat').value);
-        const lonOrg = parseFloat(document.getElementById('origin-lon').value);
-        const latDst = parseFloat(document.getElementById('dest-lat').value);
-        const lonDst = parseFloat(document.getElementById('dest-lon').value);
-
-        if (isNaN(latOrg) || isNaN(latDst)) {
-            alert("Por favor selecciona lugares válidos de la lista.");
-            return;
-        }
-
-        const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = '<p style="text-align:center">Calculando mejor ruta con algoritmo CSA...</p>';
-        routeLayers.clearLayers(); // Limpiar mapa
-        
-        // Marcadores inicio/fin
-        L.marker([latOrg, lonOrg]).bindPopup("Origen").addTo(routeLayers);
-        L.marker([latDst, lonDst]).bindPopup("Destino").addTo(routeLayers);
-
-        try {
-            // LLAMADA AL ALGORITMO
-            const routes = await router.findRoute(latOrg, lonOrg, latDst, lonDst, new Date());
-
-            if (routes.length === 0) {
-                resultsDiv.innerHTML = '<p style="text-align:center; color:red">No se encontró ruta en transporte público.</p>';
-                return;
+                // Inicializar Planificador
+                window.planificador = new TransportePlanificador(db);
+                document.getElementById('resultados-lista').innerHTML = '<div style="padding:20px; text-align:center; color:green">Datos cargados. Listo para planificar.</div>';
+                
+                // Set default date to now
+                const now = new Date();
+                const offset = now.getTimezoneOffset() * 60000;
+                const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
+                document.getElementById('input-fecha').value = localISOTime;
             }
 
-            renderRoutes(routes);
+            // --- 3. Interacción UI ---
+            const dom = {
+                btnMapOrigen: document.getElementById('btn-map-origen'),
+                btnMapDestino: document.getElementById('btn-map-destino'),
+                btnGpsOrigen: document.getElementById('btn-gps-origen'),
+                inputOrigen: document.getElementById('input-origen'),
+                inputDestino: document.getElementById('input-destino'),
+                latOrigen: document.getElementById('coord-origen-lat'),
+                lonOrigen: document.getElementById('coord-origen-lon'),
+                latDestino: document.getElementById('coord-destino-lat'),
+                lonDestino: document.getElementById('coord-destino-lon'),
+                overlay: document.getElementById('map-overlay-msg'),
+                btnCalcular: document.getElementById('btn-calcular'),
+                resLista: document.getElementById('resultados-lista')
+            };
 
-        } catch (e) {
-            console.error(e);
-            resultsDiv.innerHTML = `<p style="text-align:center; color:red">Error: ${e.message}</p>`;
+            // Selección en Mapa
+            function activarSeleccionMapa(modo) {
+                selectingMode = modo;
+                dom.overlay.style.display = 'block';
+                dom.overlay.textContent = modo === 'origen' ? "Haz click en el mapa para el ORIGEN" : "Haz click en el mapa para el DESTINO";
+                map.getContainer().style.cursor = 'crosshair';
+            }
+
+            map.on('click', (e) => {
+                if (!selectingMode) return;
+                const { lat, lng } = e.latlng;
+                
+                if (selectingMode === 'origen') {
+                    if (markerOrigen) map.removeLayer(markerOrigen);
+                    markerOrigen = L.marker([lat, lng], { draggable: true }).addTo(map).bindPopup("Origen").openPopup();
+                    dom.latOrigen.value = lat;
+                    dom.lonOrigen.value = lng;
+                    dom.inputOrigen.value = `Lat: ${lat.toFixed(4)}, Lon: ${lng.toFixed(4)}`;
+                    
+                    markerOrigen.on('dragend', (evt) => {
+                        const pos = evt.target.getLatLng();
+                        dom.latOrigen.value = pos.lat;
+                        dom.lonOrigen.value = pos.lng;
+                    });
+                } else {
+                    if (markerDestino) map.removeLayer(markerDestino);
+                    markerDestino = L.marker([lat, lng], { draggable: true }).addTo(map).bindPopup("Destino").openPopup();
+                    dom.latDestino.value = lat;
+                    dom.lonDestino.value = lng;
+                    dom.inputDestino.value = `Lat: ${lat.toFixed(4)}, Lon: ${lng.toFixed(4)}`;
+                    
+                    markerDestino.on('dragend', (evt) => {
+                        const pos = evt.target.getLatLng();
+                        dom.latDestino.value = pos.lat;
+                        dom.lonDestino.value = pos.lng;
+                    });
+                }
+
+                // Reset UI
+                selectingMode = null;
+                dom.overlay.style.display = 'none';
+                map.getContainer().style.cursor = '';
+            });
+
+            dom.btnMapOrigen.addEventListener('click', () => activarSeleccionMapa('origen'));
+            dom.btnMapDestino.addEventListener('click', () => activarSeleccionMapa('destino'));
+
+            // GPS
+            dom.btnGpsOrigen.addEventListener('click', () => {
+                if(!navigator.geolocation) return alert("Navegador sin GPS");
+                dom.inputOrigen.value = "Obteniendo ubicación...";
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const { latitude, longitude } = pos.coords;
+                    if (markerOrigen) map.removeLayer(markerOrigen);
+                    markerOrigen = L.marker([latitude, longitude]).addTo(map).bindPopup("Tu Ubicación").openPopup();
+                    map.setView([latitude, longitude], 15);
+                    dom.latOrigen.value = latitude;
+                    dom.lonOrigen.value = longitude;
+                    dom.inputOrigen.value = "Ubicación GPS Actual";
+                }, err => {
+                    alert("Error GPS: " + err.message);
+                    dom.inputOrigen.value = "";
+                });
+            });
+
+            // --- 4. Cálculo y Dibujado ---
+            dom.btnCalcular.addEventListener('click', () => {
+                const latOr = parseFloat(dom.latOrigen.value);
+                const lonOr = parseFloat(dom.lonOrigen.value);
+                const latDe = parseFloat(dom.latDestino.value);
+                const lonDe = parseFloat(dom.lonDestino.value);
+                const fecha = new Date(document.getElementById('input-fecha').value);
+
+                if(isNaN(latOr) || isNaN(latDe)) return alert("Por favor define origen y destino en el mapa.");
+
+                dom.resLista.innerHTML = "Calculando ruta...";
+                routeLayer.clearLayers(); // Limpiar mapa
+
+                // Ejecutar Algoritmo
+                const ruta = window.planificador.buscarRuta(latOr, lonOr, latDe, lonDe, fecha);
+
+                if (!ruta) {
+                    dom.resLista.innerHTML = "<div style='padding:20px; color:red; text-align:center'>No se encontró ruta. Intenta otra fecha o ubicaciones más cercanas a paradas.</div>";
+                    return;
+                }
+
+                // Renderizar Resultados Texto
+                let html = `
+                    <div class="resumen-viaje">
+                        <h3>⏱ ${ruta.duracionTotal} / 💵 ${ruta.costoTotal}</h3>
+                        <div>Salida: ${ruta.horaSalida} - Llegada: ${ruta.horaLlegada}</div>
+                        <div style="font-size:0.9em; margin-top:5px;">${ruta.transbordos} transbordos</div>
+                    </div>
+                `;
+
+                // Renderizar Pasos y Dibujar Mapa
+                const bounds = L.latLngBounds([]);
+
+                ruta.pasos.forEach(paso => {
+                    // Texto
+                    const clase = paso.tipo.includes('caminata') ? 'walk' : 'bus';
+                    const icono = paso.tipo.includes('caminata') ? '🚶' : '🚌';
+                    
+                    html += `
+                        <div class="paso-ruta ${clase}">
+                            <div class="paso-header">
+                                <span class="paso-titulo">${icono} ${paso.tipo.toUpperCase()}</span>
+                                <span class="paso-hora">${paso.horaSalida}</span>
+                            </div>
+                            <div class="paso-detalle">
+                                ${paso.instruccion}<br>
+                                <small>${paso.duracion} (${paso.distancia || ''})</small>
+                            </div>
+                        </div>
+                    `;
+
+                    // Mapa (Polyline)
+                    if (paso.geometry && paso.geometry.length > 0) {
+                        const color = paso.color || (paso.tipo.includes('caminata') ? '#6c757d' : '#0d6efd');
+                        const dashArray = paso.tipo.includes('caminata') ? '5, 10' : null; // Punteado si camina
+                        
+                        const line = L.polyline(paso.geometry, {
+                            color: color,
+                            weight: 5,
+                            opacity: 0.8,
+                            dashArray: dashArray
+                        }).addTo(routeLayer);
+                        
+                        line.bindPopup(paso.instruccion);
+                        paso.geometry.forEach(pt => bounds.extend(pt));
+                    }
+                });
+
+                dom.resLista.innerHTML = html;
+                if(bounds.isValid()) map.fitBounds(bounds, { padding: [50, 50] });
+            });
+
+            // Iniciar
+            cargarGTFS();
+        });
+    </script>
+    <script>
+
+
+/**
+ * algoritmo.js - v2.0
+ * Algoritmo de planificación de rutas GTFS con soporte Geoespacial
+ * Soporta:
+ * - Rutas desde coordenadas arbitrarias (GPS/Mapa)
+ * - Visualización de Shapes (trazado real de la ruta)
+ * - Caminata inicial y final
+ * - Selección de Fecha/Hora
+ */
+
+class MinPriorityQueue {
+    constructor() {
+        this.heap = [];
+    }
+
+    push(val, priority) {
+        this.heap.push({ val, priority });
+        this.bubbleUp(this.heap.length - 1);
+    }
+
+    pop() {
+        if (this.heap.length === 0) return null;
+        const min = this.heap[0];
+        const end = this.heap.pop();
+        if (this.heap.length > 0) {
+            this.heap[0] = end;
+            this.sinkDown(0);
+        }
+        return min.val;
+    }
+
+    isEmpty() {
+        return this.heap.length === 0;
+    }
+
+    bubbleUp(n) {
+        while (n > 0) {
+            let parent = Math.floor((n - 1) / 2);
+            if (this.heap[n].priority >= this.heap[parent].priority) break;
+            [this.heap[n], this.heap[parent]] = [this.heap[parent], this.heap[n]];
+            n = parent;
         }
     }
 
-    function renderRoutes(routes) {
-        const container = document.getElementById('results');
-        container.innerHTML = '';
+    sinkDown(n) {
+        let length = this.heap.length;
+        let element = this.heap[n];
+        let swap = null;
 
-        routes.forEach((route, idx) => {
-            // Calcular costo total
-            let totalFare = 0;
-            let currency = '';
-            route.legs.forEach(l => { if(l.tarifa && l.tarifa.num) { totalFare += l.tarifa.num; currency = l.tarifa.moneda; } });
-            const costStr = totalFare > 0 ? `${totalFare} ${currency}` : "Tarifa base";
-            const durationMin = Math.round(route.duration / 60);
+        while (true) {
+            let child2N = (n + 1) * 2;
+            let child1N = child2N - 1;
+            swap = null;
 
-            const card = document.createElement('div');
-            card.className = 'route-card';
-            card.innerHTML = `
-                <div class="route-header">
-                    <div class="route-duration">${durationMin} min</div>
-                    <div class="route-cost">${costStr}</div>
-                </div>
-                <div class="route-timeline">
-                    ${renderLegs(route.legs)}
-                </div>
-            `;
-            
-            // Dibujar ruta en mapa al hacer click
-            card.addEventListener('click', () => drawRouteOnMap(route));
-            
-            container.appendChild(card);
-            
-            // Dibujar la primera ruta por defecto
-            if(idx === 0) drawRouteOnMap(route);
-        });
+            if (child1N < length) {
+                let child1 = this.heap[child1N];
+                if (child1.priority < element.priority) {
+                    swap = child1N;
+                }
+            }
+
+            if (child2N < length) {
+                let child2 = this.heap[child2N];
+                let child1Priority = (swap === null) ? element.priority : this.heap[child1N].priority;
+                if (child2.priority < child1Priority) {
+                    swap = child2N;
+                }
+            }
+
+            if (swap === null) break;
+            [this.heap[n], this.heap[swap]] = [this.heap[swap], this.heap[n]];
+            n = swap;
+        }
+    }
+}
+
+class TransportePlanificador {
+    constructor(db) {
+        this.db = db;
+        this.MAX_WALK_DISTANCE_KM = 2.0; // Distancia máx para caminar a una parada
+        this.WALK_SPEED_MPS = 1.1; // ~4km/h
+        this.TRANSFER_PENALTY_SECONDS = 60; 
     }
 
-    function renderLegs(legs) {
-        let html = '';
-        const formatTime = (sec) => {
-            const d = new Date(); d.setHours(0,0,0,0); d.setSeconds(sec);
-            return d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    /**
+     * Busca la parada más cercana a una coordenada dada
+     */
+    encontrarParadaMasCercana(lat, lon) {
+        let mejorParada = null;
+        let menorDistancia = Infinity;
+
+        // Iteramos sobre paradas principales
+        this.db.paradasPrincipales.forEach(stop => {
+            const dist = this.getDistanciaHaversine(lat, lon, stop.stop_lat, stop.stop_lon);
+            if (dist < menorDistancia) {
+                menorDistancia = dist;
+                mejorParada = stop;
+            }
+        });
+
+        // Retornamos la parada y la distancia en KM
+        return { parada: mejorParada, distancia: menorDistancia };
+    }
+
+    /**
+     * Función principal actualizada para aceptar Coordenadas y Fecha
+     */
+    buscarRuta(origenLat, origenLon, destinoLat, destinoLon, fechaObj) {
+        // 1. Identificar paradas de inicio y fin más cercanas
+        const inicioInfo = this.encontrarParadaMasCercana(origenLat, origenLon);
+        const finInfo = this.encontrarParadaMasCercana(destinoLat, destinoLon);
+
+        if (!inicioInfo.parada || !finInfo.parada) return null;
+        if (inicioInfo.distancia > 5 || finInfo.distancia > 5) {
+            console.warn("Origen o destino demasiado lejos de cualquier parada conocida (>5km)");
+        }
+
+        const origenId = inicioInfo.parada.stop_id;
+        const destinoId = finInfo.parada.stop_id;
+
+        // 2. Preparar tiempos
+        // Calcular tiempo de caminata inicial (LatUsuario -> ParadaOrigen)
+        const segundosCaminataInicial = Math.ceil((inicioInfo.distancia * 1000) / this.WALK_SPEED_MPS);
+        
+        // Convertir fecha objeto a formatos GTFS
+        const yyyy = fechaObj.getFullYear();
+        const mm = String(fechaObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(fechaObj.getDate()).padStart(2, '0');
+        const fechaYYYYMMDD = parseInt(`${yyyy}${mm}${dd}`);
+        
+        // Obtener segundos del día (Hora inicio viaje)
+        const horaInicioSegundos = (fechaObj.getHours() * 3600) + (fechaObj.getMinutes() * 60) + fechaObj.getSeconds();
+        
+        // El tiempo real de "partida" en la red de transporte es HoraUsuario + Caminata a la parada
+        const horaLlegadaPrimeraParada = horaInicioSegundos + segundosCaminataInicial;
+
+        // Obtener día de la semana para filtrar servicios (monday, tuesday...)
+        const diasSemana = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+        const diaSemanaField = diasSemana[fechaObj.getDay()];
+
+        // 3. Ejecutar Dijkstra
+        const resultadoDijkstra = this.ejecutarDijkstra(origenId, destinoId, fechaYYYYMMDD, horaLlegadaPrimeraParada, diaSemanaField);
+
+        if (!resultadoDijkstra) return null;
+
+        // 4. Construir resultado final agregando las patas de caminata (Inicio y Fin)
+        return this.construirResultadoGeo(
+            resultadoDijkstra, 
+            origenLat, origenLon, 
+            destinoLat, destinoLon, 
+            inicioInfo, finInfo,
+            horaInicioSegundos,
+            fechaYYYYMMDD // Pasamos la fecha para validación
+        );
+    }
+
+    ejecutarDijkstra(origenId, destinoId, fechaYYYYMMDD, horaInicioSegundos, diaSemanaField) {
+        const bestTimes = new Map();
+        const pq = new MinPriorityQueue();
+
+        pq.push({
+            stopId: origenId,
+            currentTime: horaInicioSegundos,
+            path: [],
+            cost: 0,
+            transfers: 0
+        }, horaInicioSegundos);
+
+        bestTimes.set(origenId, horaInicioSegundos);
+
+        while (!pq.isEmpty()) {
+            const current = pq.pop();
+            const { stopId, currentTime, path, cost, transfers } = current;
+
+            if (stopId === destinoId) {
+                return current;
+            }
+
+            if (bestTimes.has(stopId) && bestTimes.get(stopId) < currentTime) continue;
+
+            // A. Caminar a vecinos (Transbordos)
+            const paradasCercanas = this.obtenerParadasCercanas(stopId);
+            for (const p of paradasCercanas) {
+                const walkTime = Math.ceil((p.distanceKm * 1000) / this.WALK_SPEED_MPS);
+                const arrivalTime = currentTime + walkTime;
+
+                if (!bestTimes.has(p.id) || arrivalTime < bestTimes.get(p.id)) {
+                    bestTimes.set(p.id, arrivalTime);
+                    pq.push({
+                        stopId: p.id,
+                        currentTime: arrivalTime,
+                        path: [...path, {
+                            type: 'walk',
+                            from: stopId,
+                            to: p.id,
+                            startTime: currentTime,
+                            endTime: arrivalTime,
+                            distance: p.distanceKm
+                        }],
+                        cost: cost,
+                        transfers: transfers
+                    }, arrivalTime);
+                }
+            }
+
+            // B. Tomar transporte
+            const viajesPosibles = this.obtenerViajesDesdeParada(stopId, currentTime, fechaYYYYMMDD, diaSemanaField);
+            
+            for (const viaje of viajesPosibles) {
+                // Penalización por espera y transbordo
+                const waitTime = viaje.departureTime - currentTime;
+                
+                if (!bestTimes.has(viaje.stopDestino) || viaje.arrivalTimeDestino < bestTimes.get(viaje.stopDestino)) {
+                    bestTimes.set(viaje.stopDestino, viaje.arrivalTimeDestino);
+                    pq.push({
+                        stopId: viaje.stopDestino,
+                        currentTime: viaje.arrivalTimeDestino,
+                        path: [...path, {
+                            type: 'transit',
+                            from: stopId,
+                            to: viaje.stopDestino,
+                            trip: viaje.trip,
+                            route: viaje.route,
+                            startTime: viaje.departureTime,
+                            endTime: viaje.arrivalTimeDestino,
+                            wait: waitTime
+                        }],
+                        cost: cost + (viaje.fare || 0),
+                        transfers: transfers + 1
+                    }, viaje.arrivalTimeDestino);
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Construye el objeto de respuesta final incluyendo geometría (Lat/Lon array)
+     */
+    construirResultadoGeo(finalNode, latOrigen, lonOrigen, latDestino, lonDestino, infoInicio, infoFin, horaInicioReal, fechaNum) {
+        const pasos = [];
+        let totalFare = 0;
+        let monedas = new Set();
+
+        // 1. Pata Inicial: Caminata desde GPS usuario -> Primera Parada
+        const tiempoCaminataInicio = Math.ceil((infoInicio.distancia * 1000) / this.WALK_SPEED_MPS);
+        pasos.push({
+            tipo: 'caminata_inicial',
+            origen: "Tu Ubicación",
+            destino: infoInicio.parada.stop_name,
+            horaSalida: this.segundosAHora(horaInicioReal),
+            horaLlegada: this.segundosAHora(horaInicioReal + tiempoCaminataInicio),
+            duracion: this.segundosAFormato(tiempoCaminataInicio),
+            distancia: infoInicio.distancia.toFixed(2) + ' km',
+            instruccion: `Camina hacia ${infoInicio.parada.stop_name}`,
+            geometry: [[latOrigen, lonOrigen], [infoInicio.parada.stop_lat, infoInicio.parada.stop_lon]]
+        });
+
+        // 2. Trayecto Dijkstra (Bus y Transbordos)
+        finalNode.path.forEach(segment => {
+            if (segment.type === 'walk') {
+                const fromStop = this.db.stops.get(segment.from);
+                const toStop = this.db.stops.get(segment.to);
+                pasos.push({
+                    tipo: 'transbordo_pie',
+                    origen: fromStop.stop_name,
+                    destino: toStop.stop_name,
+                    horaSalida: this.segundosAHora(segment.startTime),
+                    horaLlegada: this.segundosAHora(segment.endTime),
+                    duracion: this.segundosAFormato(segment.duration || (segment.endTime - segment.startTime)),
+                    distancia: segment.distance.toFixed(2) + ' km',
+                    instruccion: `Transbordo a pie hacia ${toStop.stop_name}`,
+                    geometry: [[fromStop.stop_lat, fromStop.stop_lon], [toStop.stop_lat, toStop.stop_lon]]
+                });
+            } else {
+                const fromStop = this.db.stops.get(segment.from);
+                const toStop = this.db.stops.get(segment.to);
+                const tarifaInfo = this.db.tarifas.get(segment.route.route_id);
+                const precio = tarifaInfo ? tarifaInfo.num : 0;
+                const moneda = tarifaInfo ? tarifaInfo.moneda : 'Bs.';
+                
+                totalFare += precio;
+                monedas.add(moneda);
+
+                // Obtener Geometría (Shape) del viaje
+                let shapeCoords = [];
+                if (segment.trip.shape_id && this.db.shapes.has(segment.trip.shape_id)) {
+                    // Obtener todos los puntos del shape
+                    const allPoints = this.db.shapes.get(segment.trip.shape_id);
+                    // Aquí podríamos recortar el shape para mostrar solo de parada A a parada B
+                    // pero para simplificar devolvemos el shape completo del viaje o una línea recta
+                    // Optimización: Devolvemos línea recta si es muy complejo recortar ahora,
+                    // o intentamos mapear. Para V1, usamos línea recta entre paradas si no hay lógica compleja.
+                    // Pero mejor: Devolvemos el array completo de Lat/Lons para Leaflet
+                     shapeCoords = allPoints.map(p => [p.shape_pt_lat, p.shape_pt_lon]);
+                } else {
+                    // Fallback: Línea recta
+                    shapeCoords = [[fromStop.stop_lat, fromStop.stop_lon], [toStop.stop_lat, toStop.stop_lon]];
+                }
+
+                pasos.push({
+                    tipo: 'transporte',
+                    route: segment.route,
+                    trip: segment.trip,
+                    origen: fromStop.stop_name,
+                    destino: toStop.stop_name,
+                    horaSalida: this.segundosAHora(segment.startTime),
+                    horaLlegada: this.segundosAHora(segment.endTime),
+                    duracion: this.segundosAFormato(segment.endTime - segment.startTime),
+                    espera: this.segundosAFormato(segment.wait),
+                    precio: `${precio} ${moneda}`,
+                    instruccion: `Toma la ruta ${segment.route.route_short_name} (${segment.trip.trip_headsign})`,
+                    geometry: shapeCoords, // Array de [lat, lon]
+                    color: `#${segment.route.route_color || '0000FF'}`
+                });
+            }
+        });
+
+        // 3. Pata Final: Caminata desde Última Parada -> Destino GPS
+        const tiempoCaminataFin = Math.ceil((infoFin.distancia * 1000) / this.WALK_SPEED_MPS);
+        const horaLlegadaUltimaParada = finalNode.currentTime;
+        
+        pasos.push({
+            tipo: 'caminata_final',
+            origen: infoFin.parada.stop_name,
+            destino: "Destino Seleccionado",
+            horaSalida: this.segundosAHora(horaLlegadaUltimaParada),
+            horaLlegada: this.segundosAHora(horaLlegadaUltimaParada + tiempoCaminataFin),
+            duracion: this.segundosAFormato(tiempoCaminataFin),
+            distancia: infoFin.distancia.toFixed(2) + ' km',
+            instruccion: `Camina hacia tu destino final`,
+            geometry: [[infoFin.parada.stop_lat, infoFin.parada.stop_lon], [latDestino, lonDestino]]
+        });
+
+        // 4. Calcular totales
+        const horaFinReal = horaLlegadaUltimaParada + tiempoCaminataFin;
+        const duracionTotalSeg = horaFinReal - horaInicioReal;
+
+        return {
+            pasos: pasos,
+            horaSalida: this.segundosAHora(horaInicioReal),
+            horaLlegada: this.segundosAHora(horaFinReal),
+            duracionTotal: this.segundosAFormato(duracionTotalSeg),
+            costoTotal: totalFare > 0 ? `${totalFare.toFixed(2)} ${[...monedas].join('/')}` : "Gratis / Desconocido",
+            transbordos: finalNode.transfers,
+            fecha: fechaNum
         };
-
-        legs.forEach(leg => {
-            const isWalk = leg.type === 'WALK';
-            const modeClass = isWalk ? 'mode-WALK' : 'mode-BUS';
-            const icon = isWalk ? '🚶' : '🚌';
-            const title = isWalk 
-                ? (leg.isTransfer ? "Transbordo a pie" : "Caminar") 
-                : `${leg.route.route_short_name || leg.route.route_long_name}`;
-            const desc = isWalk 
-                ? `${Math.round(leg.distance)} metros` 
-                : `Hacia: ${leg.trip.trip_headsign}`;
-
-            html += `
-                <div class="leg ${modeClass}">
-                    <div class="leg-time">
-                        ${formatTime(leg.startTime)}<br>
-                        <span style="font-weight:400; color:#888; font-size:10px;">${formatTime(leg.endTime)}</span>
-                    </div>
-                    <div class="leg-line-container">
-                        <div class="leg-dot"></div>
-                        <div class="leg-line"></div>
-                    </div>
-                    <div class="leg-details">
-                        <div class="leg-title">${icon} ${title}</div>
-                        <div class="leg-desc">${desc}</div>
-                        ${!isWalk && leg.waitTime > 60 ? `<div class="leg-instruction">⌛ Espera ${Math.round(leg.waitTime/60)} min</div>` : ''}
-                    </div>
-                </div>
-            `;
-        });
-        return html;
     }
 
-    function drawRouteOnMap(route) {
-        routeLayers.clearLayers();
-        // Reponer marcadores inicio fin
-        const start = route.legs[0].from;
-        const end = route.legs[route.legs.length-1].to;
-        L.marker([start.lat, start.lon]).addTo(routeLayers);
-        L.marker([end.lat, end.lon]).addTo(routeLayers);
+    // --- REUTILIZABLES (Sin cambios mayores) ---
+    obtenerParadasCercanas(currentStopId) {
+        const vecinos = [];
+        const currentStop = this.db.stops.get(currentStopId);
+        if (!currentStop) return [];
+        this.db.paradasPrincipales.forEach(targetStop => {
+            if (targetStop.stop_id === currentStopId) return;
+            const dist = this.getDistanciaHaversine(currentStop.stop_lat, currentStop.stop_lon, targetStop.stop_lat, targetStop.stop_lon);
+            if (dist <= this.MAX_WALK_DISTANCE_KM) vecinos.push({ id: targetStop.stop_id, distanceKm: dist });
+        });
+        return vecinos;
+    }
 
-        route.legs.forEach(leg => {
-            // Idealmente aquí usaríamos "shapes.txt" para dibujar la curva real del bus
-            // Como fallback, dibujamos línea recta entre paradas
-            const color = leg.type === 'WALK' ? '#999' : '#0d6efd';
-            const dashArray = leg.type === 'WALK' ? '5, 10' : null;
-            
-            // Si tuviéramos shapes.txt cargado, buscaríamos el shape_id del trip aquí
-            // Por ahora, línea recta:
-            const latlngs = [
-                [leg.from.lat || leg.from.lat, leg.from.lon || leg.from.lon],
-                [leg.to.lat || leg.to.lat, leg.to.lon || leg.to.lon]
-            ];
-            
-            L.polyline(latlngs, {
-                color: color, 
-                weight: 5, 
-                dashArray: dashArray,
-                opacity: 0.8
-            }).addTo(routeLayers);
+    obtenerViajesDesdeParada(stopId, minTime, fecha, diaSemana) {
+        const opciones = [];
+        const andenes = this.db.paradasPadreHijas.get(stopId) || [stopId];
+        let salidas = [];
+        andenes.forEach(andenId => {
+            const st = this.db.stopTimesPorParada.get(andenId);
+            if (st) salidas = salidas.concat(st);
         });
 
-        // Zoom a la ruta
-        const bounds = L.latLngBounds([start.lat, start.lon], [end.lat, end.lon]);
-        map.fitBounds(bounds, { padding: [50, 50] });
-    }
-</script>
+        for (const stOrigen of salidas) {
+            if (!this.esServicioValido(stOrigen.trip_id, fecha, diaSemana)) continue;
 
+            const trip = this.db.trips.get(stOrigen.trip_id);
+            const route = this.db.routes.get(trip.route_id);
+            const tarifaInfo = this.db.tarifas.get(route.route_id);
+            const fare = tarifaInfo ? tarifaInfo.num : 0;
+            const freqs = this.db.frequencies.get(stOrigen.trip_id);
+
+            let departureTimeSecs = -1;
+            if (freqs && freqs.length > 0) {
+                const stInicial = this.db.stopTimes.find(s => s.trip_id === stOrigen.trip_id && s.stop_sequence === 1);
+                const offset = this.aSegundos(stOrigen.departure_time) - this.aSegundos(stInicial.departure_time);
+                for (const freq of freqs) {
+                    const startService = this.aSegundos(freq.start_time);
+                    const endService = this.aSegundos(freq.end_time);
+                    const headway = freq.headway_secs;
+                    let t = startService;
+                    while ((t + offset) < minTime && t < endService) t += headway;
+                    if ((t + offset) >= minTime && t < endService) {
+                        departureTimeSecs = t + offset;
+                        break;
+                    }
+                }
+            } else {
+                const dep = this.aSegundos(stOrigen.departure_time);
+                if (dep >= minTime) departureTimeSecs = dep;
+            }
+
+            if (departureTimeSecs !== -1) {
+                const paradasPosteriores = this.db.stopTimes.filter(st => st.trip_id === stOrigen.trip_id && st.stop_sequence > stOrigen.stop_sequence);
+                for (const stDestino of paradasPosteriores) {
+                    let arrivalTimeSecs = 0;
+                    if (freqs && freqs.length > 0) {
+                         const diff = this.aSegundos(stDestino.arrival_time) - this.aSegundos(stOrigen.departure_time);
+                         arrivalTimeSecs = departureTimeSecs + diff;
+                    } else {
+                        arrivalTimeSecs = this.aSegundos(stDestino.arrival_time);
+                    }
+                    const stopDestinoObj = this.db.stops.get(stDestino.stop_id);
+                    const stopDestinoMainId = (stopDestinoObj.location_type === 0 && stopDestinoObj.parent_station) ? stopDestinoObj.parent_station : stDestino.stop_id;
+
+                    opciones.push({
+                        trip: trip, route: route, stopDestino: stopDestinoMainId,
+                        departureTime: departureTimeSecs, arrivalTimeDestino: arrivalTimeSecs, fare: fare
+                    });
+                }
+            }
+        }
+        return opciones;
+    }
+
+    esServicioValido(tripId, fechaNum, diaSemanaStr) {
+        const trip = this.db.trips.get(tripId);
+        if (!trip) return false;
+        const cal = this.db.calendar.get(trip.service_id);
+        if (!cal) return false;
+        if (fechaNum < cal.start_date || fechaNum > cal.end_date) return false;
+        if (cal[diaSemanaStr] !== 1) return false;
+        return true;
+    }
+
+    aSegundos(horaStr) {
+        if (!horaStr) return 0;
+        const [h, m, s] = horaStr.split(':').map(Number);
+        return (h * 3600) + (m * 60) + (s || 0);
+    }
+
+    segundosAHora(seg) {
+        let h = Math.floor(seg / 3600);
+        let m = Math.floor((seg % 3600) / 60);
+        return [h.toString().padStart(2, '0'), m.toString().padStart(2, '0')].join(':');
+    }
+
+    segundosAFormato(seg) {
+        if (seg < 60) return `${seg} seg`;
+        const h = Math.floor(seg / 3600);
+        const m = Math.floor((seg % 3600) / 60);
+        if (h > 0) return `${h}h ${m}min`;
+        return `${m} min`;
+    }
+
+    getDistanciaHaversine(lat1, lon1, lat2, lon2) {
+        const toRad = x => x * Math.PI / 180;
+        const R = 6371; 
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+}
+
+window.TransportePlanificador = TransportePlanificador;
+    </script>
 </body>
 </html>
