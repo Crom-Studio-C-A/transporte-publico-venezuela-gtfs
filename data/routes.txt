@@ -5,3 +5,4 @@ GRE-BIS,BP,Biscucuy,Ruta Guanare - Biscucuy,3
 L1-MARA,METRO-MCBO,Línea 1 (Metro de Maracaibo),Altos de La Vanega - Libertador,1
 GRE-BAR,SINFO,Guanare - Barquisimeto,Ruta Guanare - Barquisimeto (SINFO),3
 L-LIMPIA,METRO-MCBO,La Limpia,Libertador - Curva de Molina,3
+MB_CCS_501,MetroBus_CCS,MetroBus 501,Ruta Propatria - Casalta,3
