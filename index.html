@@ -1583,12 +1583,20 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                     });
                     logDebug(`Índice creado para ${db.stopTimesPorParada.size} paradas (incl. andenes).`, 'ok');
 
-                    // --- INICIALIZAR EL PLANIFICADOR ---
-                    if (window.TransportePlanificador) {
-                        planificador = new TransportePlanificador(db);
-                        logDebug("Algoritmo de planificación cargado.", 'ok');
+                    // --- INICIALIZAR EL PLANIFICADOR (TRANSIT ENGINE) ---
+                    if (window.TransitEngine) {
+                        planificador = new TransitEngine();
+                        // Pasamos los datos convirtiendo los Map a Array según la firma loadData
+                        planificador.loadData(
+                            [...db.stops.values()],
+                            [...db.routes.values()],
+                            [...db.trips.values()],
+                            db.stopTimes, // Ya es array
+                            [...db.calendar.values()]
+                        );
+                        logDebug("TransitEngine cargado e inicializado.", 'ok');
                     } else {
-                        console.error("No se encontró la clase TransportePlanificador. Verifique algoritmo.js");
+                        console.error("No se encontró la clase TransitEngine. Verifique algoritmo.js");
                     }
 
                     logDebug("Base de datos en memoria creada.", 'ok');
@@ -1791,7 +1799,8 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
             function segundosAFormato(seg) {
                 const horas = Math.floor(seg / 3600);
                 const minutos = Math.floor((seg % 3600) / 60);
-                return `${horas}h ${minutos}min`;
+                if (horas > 0) return `${horas}h ${minutos}min`;
+                return `${minutos}min`;
             }
             
             function getDistanciaHaversine(lat1, lon1, lat2, lon2) {
@@ -2542,6 +2551,7 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 
                 return {
                     segundosInicio,
+                    horaFormato, // Agregado para el nuevo motor
                     diaField,
                     fechaYYYYMMDD,
                     diaNombre: diaNombreConAcento.charAt(0).toUpperCase() + diaNombreConAcento.slice(1)
@@ -2552,7 +2562,7 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                 const origenId = dom.planOrigenId.value; 
                 const destinoId = dom.planDestinoId.value; 
                 
-                dom.planResultados.innerHTML = '<div class="status-loading" style="padding:20px;">Calculando mejor ruta...</div>';
+                dom.planResultados.innerHTML = '<div class="status-loading" style="padding:20px;">Calculando mejor ruta con TransitEngine™...</div>';
                 logDebug(`Buscando ruta de ${origenId} a ${destinoId}...`, 'info');
 
                 if (!origenId || !destinoId || origenId === destinoId) {
@@ -2565,11 +2575,29 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                     return;
                 }
 
+                // Obtener coordenadas de los ID de paradas
+                const stopOrigen = db.stops.get(origenId);
+                const stopDestino = db.stops.get(destinoId);
+
+                if (!stopOrigen || !stopDestino) {
+                    dom.planResultados.innerHTML = `<h3 style="color:red; text-align: center;">Error: Coordenadas de parada no encontradas.</h3>`;
+                    return;
+                }
+
                 // TELEMETRÍA
                 trackEvent('search_trip', {
                     'origin_id': origenId,
                     'destination_id': destinoId
                 });
+
+                // Preferencias por defecto
+                const prefs = {
+                    weightTime: 1.0,
+                    weightCost: 0, 
+                    weightTransfers: 300, 
+                    maxWalkDist: 2000, 
+                    allowTaxi: false
+                };
                 
                 // Usar setTimeout para permitir que el UI muestre "Cargando" antes de bloquear el hilo
                 setTimeout(() => {
@@ -2577,66 +2605,94 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                     let html = '';
 
                     // Buscar en los próximos 7 días hasta encontrar UNA ruta válida
-                    // (Dijkstra es costoso, no buscamos todos los días a la vez)
                     for (let dia = 0; dia < 7; dia++) {
                         const tiempo = getDatosDeTiempo(dia);
                         const diaNombre = (dia === 0) ? "Hoy" : (dia === 1) ? "Mañana" : tiempo.diaNombre;
+                        const horaInicioStr = (dia === 0) ? tiempo.horaFormato : "00:00:00";
                         
-                        logDebug(`Probando día: ${diaNombre}`, 'info');
+                        logDebug(`Probando día: ${diaNombre} (${tiempo.fechaYYYYMMDD}) desde ${horaInicioStr}`, 'info');
 
-                        const ruta = planificador.buscarRuta(
-                            origenId, 
-                            destinoId, 
+                        // NUEVA LLAMADA AL MOTOR DE TRÁNSITO
+                        const resultado = planificador.findPath(
+                            stopOrigen.stop_lat, 
+                            stopOrigen.stop_lon,
+                            stopDestino.stop_lat, 
+                            stopDestino.stop_lon, 
+                            horaInicioStr,
                             tiempo.fechaYYYYMMDD, 
-                            tiempo.segundosInicio, 
-                            tiempo.diaField
+                            prefs
                         );
 
-                        if (ruta) {
+                        // El nuevo motor devuelve un objeto con 'segments', o 'error' si falla.
+                        if (resultado && !resultado.error && resultado.segments && resultado.segments.length > 0) {
                             resultadosEncontrados = true;
                             const esManana = diaNombre === "Mañana";
                             
                             html += `<h2 class="${esManana ? 'manana' : ''}">Mejor Ruta para ${diaNombre}</h2>`;
                             
+                            // Formateo de totales
+                            const costoTotal = resultado.totalMoney > 0 ? resultado.totalMoney.toFixed(2) + " Bs." : "Gratis";
+                            const duracionTexto = segundosAFormato(resultado.totalTimeSeconds);
+
                             html += `<div class="resultado-viaje">`;
                             html += `
                                 <div class="viaje-header">
                                     <div class="resumen">
-                                        ⏱ Total: ${ruta.duracionTotal} 
-                                        <span style="font-weight:400; font-size: 0.9em; color: #555;">(${ruta.transbordos} transbordos)</span>
+                                        ⏱ Total: ${duracionTexto}
+                                        <span style="font-weight:400; font-size: 0.9em; color: #555;">(${resultado.transfers} transbordos)</span>
                                     </div>
-                                    <div class="costo">${ruta.costoTotal}</div>
+                                    <div class="costo">${costoTotal}</div>
                                 </div>
                             `;
                             
-                            ruta.pasos.forEach(paso => {
-                                if (paso.tipo === 'caminata') {
+                            // Renderizar Segmentos
+                            resultado.segments.forEach(seg => {
+                                const duracionSeg = segundosAFormato(seg.duration);
+                                
+                                if (seg.type === 'WALK') {
                                     html += `
                                         <div class="paso-viaje">
                                             <div class="paso-icon">🚶</div>
                                             <div class="paso-info">
-                                                <h4>Caminar (${paso.distancia})</h4>
-                                                <p>Desde <strong>${paso.origen}</strong> hasta <strong>${paso.destino}</strong></p>
-                                                <p>${paso.instruccion}</p>
+                                                <h4>${seg.description}</h4>
+                                                <p>Distancia: ${(seg.distance).toFixed(2)} km</p>
                                             </div>
                                             <div class="paso-tiempo">
-                                                ${paso.duracion}
+                                                ${duracionSeg}
                                             </div>
                                         </div>
                                     `;
-                                } else {
-                                    const icon = (paso.route.route_type == 1) ? '🚇' : '🚌';
+                                } else if (seg.type === 'CAR_RIDE_SHARE') {
+                                    html += `
+                                        <div class="paso-viaje">
+                                            <div class="paso-icon">🚕</div>
+                                            <div class="paso-info">
+                                                <h4>Taxi / Auto a Estación</h4>
+                                                <p>${seg.description}</p>
+                                                <p style="color: #d63384; font-weight:500;">Costo Est: ${seg.cost.toFixed(2)}</p>
+                                            </div>
+                                            <div class="paso-tiempo">
+                                                ${duracionSeg}
+                                            </div>
+                                        </div>
+                                    `;
+                                } else if (seg.type === 'TRANSIT') {
+                                    // Buscar info extra de la ruta si es necesario (el motor ya devuelve description)
+                                    // Usamos los iconos 🚇 o 🚌 según la descripción o lógica simple
+                                    const esMetro = seg.description.toLowerCase().includes('metro') || seg.description.toLowerCase().includes('tren');
+                                    const icon = esMetro ? '🚇' : '🚌';
+                                    const costoSeg = seg.cost > 0 ? `${seg.cost.toFixed(2)} Bs.` : "Incluido";
+                                    
                                     html += `
                                         <div class="paso-viaje">
                                             <div class="paso-icon">${icon}</div>
                                             <div class="paso-info">
-                                                <h4>${paso.route.route_short_name} - ${paso.trip.trip_headsign}</h4>
-                                                <p>Sube en: <strong>${paso.origen}</strong> (${paso.horaSalida})</p>
-                                                <p>Baja en: <strong>${paso.destino}</strong> (${paso.horaLlegada})</p>
-                                                <p style="color: green; font-weight:500;">Tarifa: ${paso.precio}</p>
+                                                <h4>${seg.description}</h4>
+                                                <p>Espera: ${segundosAFormato(seg.wait)}</p>
+                                                <p style="color: green; font-weight:500;">Tarifa: ${costoSeg}</p>
                                             </div>
                                             <div class="paso-tiempo">
-                                                ${paso.duracion}
+                                                ${duracionSeg}
                                             </div>
                                         </div>
                                     `;
@@ -2644,7 +2700,7 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                             });
                             
                             html += `<div style="padding:15px; background:#f8f9fa; border-top:1px solid #dee2e6; text-align:right;">
-                                <strong>Llegada estimada: ${ruta.horaLlegada}</strong>
+                                <strong>Llegada estimada: ${resultado.arrivalTime}</strong>
                             </div>`;
                             
                             html += `</div>`;
