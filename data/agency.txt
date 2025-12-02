@@ -5,4 +5,3 @@ BP,BusPortuguesa,https://www.busportuguesa.com,America/Caracas,es
 METRO-MCBO,Metro de Maracaibo,https://www.metrodemaracaibo.gob.ve/,America/Caracas,es
 SINFO,Sin Información,https://www.BUS.gob.ve/,America/Caracas,es
 
-MetroBus_CCS,Metro Bus Caracas,https://transporte.cromstudio.com.ve,America/Caracas,es
