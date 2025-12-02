@@ -2,3 +2,4 @@ route_id,tarifa_num,tipo_moneda,descripcion_tarifa
 L-CUATRI,90,Bs.,Pasaje único: 90.00 Bs. | El pago se realiza directamente al conductor en efectivo o pago móvil.
 CCS-GRE,17,USD,Tarifa Caracas-Guanare: 17 USD (o equivalente en Bs. al cambio BCV). | Compra de boletos en taquilla del terminal.
 L1-MARA,30,Bs.,Boleto Metro: 30.00 Bs. | Pago con tarjeta recargable SUVE.
+L-LIMPIA,30,Bs.,Pasaje único: 30.00 Bs. | El pago se realiza directamente al conductor en efectivo.
