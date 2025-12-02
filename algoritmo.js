@@ -1,115 +1,19 @@
 /**
- * planificador_rutas.js
- * Motor de planificación de rutas de transporte público multimodal (GTFS).
- * * CARACTERÍSTICAS:
- * - Algoritmo A* (A-Star) para optimización de búsqueda.
- * - Indexación espacial (Spatial Hash Grid) para búsquedas de vecinos O(1).
- * - Clasificación automática de rutas (Urbano vs Interurbano).
- * - Función de costo configurable (Tiempo vs Dinero vs Transbordos).
- * - Soporte multimodal (Caminata, Bus, Taxi/Coche primera milla).
- * - Búsqueda binaria en tablas de tiempos.
- * * @version 2.0.0
- * @author Senior Software Engineer AI
+ * algoritmo.js
+ * Algoritmo de planificación de rutas de transporte público (GTFS)
+ * Utiliza una adaptación del algoritmo de Dijkstra dependiente del tiempo.
+ * * Soporta:
+ * - Múltiples transbordos (sin límite fijo).
+ * - Caminatas entre paradas (transbordos a pie).
+ * - Cálculo de tarifas.
+ * - Rutas basadas en Frecuencia y Horarios fijos.
  */
 
-// --- 1. DEFINICIONES DE TIPOS (JSDoc) ---
-
-/**
- * @typedef {Object} GTFSStop
- * @property {string} stop_id
- * @property {string} stop_name
- * @property {number} stop_lat
- * @property {number} stop_lon
- * @property {number} location_type 0: parada, 1: estación
- * @property {string} [parent_station]
- */
-
-/**
- * @typedef {Object} GTFSRoute
- * @property {string} route_id
- * @property {string} route_short_name
- * @property {string} route_long_name
- * @property {number} route_type
- * @property {boolean} [is_interurban] Propiedad inferida: true si es larga distancia
- * @property {number} [avg_stop_dist] Propiedad inferida: distancia media entre paradas
- */
-
-/**
- * @typedef {Object} GTFSTrip
- * @property {string} trip_id
- * @property {string} route_id
- * @property {string} service_id
- * @property {string} trip_headsign
- * @property {number} [direction_id]
- */
-
-/**
- * @typedef {Object} GTFSStopTime
- * @property {string} trip_id
- * @property {string} arrival_time "HH:MM:SS"
- * @property {string} departure_time "HH:MM:SS"
- * @property {string} stop_id
- * @property {number} stop_sequence
- * @property {number} [arrival_sec] Pre-calculado
- * @property {number} [departure_sec] Pre-calculado
- */
-
-/**
- * @typedef {Object} GTFSCalendar
- * @property {string} service_id
- * @property {number} monday 1 o 0
- * @property {number} tuesday
- * @property {number} wednesday
- * @property {number} thursday
- * @property {number} friday
- * @property {number} saturday
- * @property {number} sunday
- * @property {number} start_date YYYYMMDD
- * @property {number} end_date YYYYMMDD
- */
-
-/**
- * @typedef {Object} UserPreferences
- * @property {number} weightTime Multiplicador de valor del tiempo (1.0 estándar)
- * @property {number} weightCost Multiplicador de costo monetario (ej: 60.0 = 1$ vale 1 min)
- * @property {number} weightTransfers Penalización por transbordo en "segundos percibidos"
- * @property {number} maxWalkDist Distancia máxima de caminata en metros
- * @property {boolean} allowTaxi Permitir taxi si no hay paradas cerca
- */
-
-/**
- * @typedef {Object} PathSegment
- * @property {'WALK'|'TRANSIT'|'CAR_RIDE_SHARE'} type
- * @property {string} fromStopId
- * @property {string} toStopId
- * @property {number} startTime Segundos desde medianoche
- * @property {number} endTime Segundos desde medianoche
- * @property {number} duration Segundos
- * @property {number} distance Kilómetros
- * @property {string} [tripId] Solo TRANSIT
- * @property {string} [routeId] Solo TRANSIT
- * @property {number} cost Costo monetario
- * @property {number} wait Tiempo de espera en segundos
- * @property {string} description Descripción humana
- */
-
-// --- 2. ESTRUCTURAS DE DATOS OPTIMIZADAS ---
-
-/**
- * Cola de Prioridad Minimizante (MinHeap).
- * Esencial para A* y Dijkstra.
- * Complejidad: O(log N) push/pop.
- */
 class MinPriorityQueue {
     constructor() {
-        /** @type {{val: any, priority: number}[]} */
         this.heap = [];
     }
 
-    /**
-     * @param {any} val El estado o nodo
-     * @param {number} priority El costo f(n) = g(n) + h(n)
-     */
     push(val, priority) {
         this.heap.push({ val, priority });
         this.bubbleUp(this.heap.length - 1);
@@ -140,24 +44,25 @@ class MinPriorityQueue {
     }
 
     sinkDown(n) {
-        const length = this.heap.length;
-        const element = this.heap[n];
-        
+        let length = this.heap.length;
+        let element = this.heap[n];
+        let swap = null;
+
         while (true) {
             let child2N = (n + 1) * 2;
             let child1N = child2N - 1;
-            let swap = null;
+            swap = null;
 
             if (child1N < length) {
-                const child1 = this.heap[child1N];
+                let child1 = this.heap[child1N];
                 if (child1.priority < element.priority) {
                     swap = child1N;
                 }
             }
 
             if (child2N < length) {
-                const child2 = this.heap[child2N];
-                const child1Priority = (swap === null) ? element.priority : this.heap[child1N].priority;
+                let child2 = this.heap[child2N];
+                let child1Priority = (swap === null) ? element.priority : this.heap[child1N].priority;
                 if (child2.priority < child1Priority) {
                     swap = child2N;
                 }
@@ -170,539 +75,370 @@ class MinPriorityQueue {
     }
 }
 
-/**
- * Grid Espacial (Spatial Hashing).
- * Permite encontrar paradas cercanas en O(1) en lugar de O(N).
- * Divide el mapa en celdas de tamaño fijo.
- */
-class SpatialGrid {
-    /**
-     * @param {number} cellSizeKm Tamaño de la celda en KM (ej: 1.0)
-     */
-    constructor(cellSizeKm = 1.0) {
-        this.grid = new Map();
-        this.cellSizeKm = cellSizeKm;
+class TransportePlanificador {
+    constructor(db) {
+        this.db = db;
+        // Configuración "sin limites" como pediste, pero con valores sanos para evitar bucles infinitos
+        this.MAX_WALK_DISTANCE_KM = 100.0; // Caminata máxima permitida entre paradas (5km es bastante)
+        this.WALK_SPEED_MPS = 1.1; // Velocidad promedio caminando (metros por segundo) ~4km/h
+        this.TRANSFER_PENALTY_SECONDS = 60; // Penalización pequeña para preferir rutas con menos transbordos si el tiempo es igual
     }
 
     /**
-     * Genera una clave única "latIdx,lonIdx" para coordenadas.
-     * Ajusta la longitud según la latitud para mantener celdas cuadradas aprox.
+     * Función principal para buscar ruta
      */
-    getKey(lat, lon) {
-        const latIdx = Math.floor(lat / (this.cellSizeKm / 111));
-        // Ajuste longitudinal por latitud (coseno)
-        const lonIdx = Math.floor(lon / (this.cellSizeKm / (111 * Math.cos(lat * (Math.PI / 180)))));
-        return `${latIdx},${lonIdx}`;
-    }
-
-    /**
-     * @param {GTFSStop} stop 
-     */
-    addStop(stop) {
-        const key = this.getKey(stop.stop_lat, stop.stop_lon);
-        if (!this.grid.has(key)) {
-            this.grid.set(key, []);
-        }
-        this.grid.get(key).push(stop.stop_id);
-    }
-
-    /**
-     * Obtiene paradas en la celda del punto y sus 8 vecinos.
-     * @param {number} lat 
-     * @param {number} lon 
-     * @returns {string[]} Lista de IDs de paradas candidatas
-     */
-    getNeighbors(lat, lon) {
-        const centerLatIdx = Math.floor(lat / (this.cellSizeKm / 111));
-        const centerLonIdx = Math.floor(lon / (this.cellSizeKm / (111 * Math.cos(lat * (Math.PI / 180)))));
+    buscarRuta(origenId, destinoId, fechaYYYYMMDD, horaInicioSegundos, diaSemanaField) {
+        // 1. Validaciones iniciales
+        if (!origenId || !destinoId) return null;
         
-        let candidates = [];
+        // Convertir IDs de inputs a IDs de paradas principales si es necesario
+        // (Asumimos que el input ya viene limpio, pero por si acaso usamos el mapeo de la DB)
         
-        for (let dx = -1; dx <= 1; dx++) {
-            for (let dy = -1; dy <= 1; dy++) {
-                const key = `${centerLatIdx + dx},${centerLonIdx + dy}`;
-                const cellStops = this.grid.get(key);
-                if (cellStops) {
-                    candidates = candidates.concat(cellStops);
+        // 2. Estructuras para Dijkstra
+        // bestTimes: Map<StopId, segundosLlegada>
+        const bestTimes = new Map();
+        
+        // Cola de prioridad: almacena estados { stopId, currentTime, path, totalCost }
+        // Prioridad: currentTime (queremos llegar lo antes posible)
+        const pq = new MinPriorityQueue();
+
+        // Estado inicial
+        pq.push({
+            stopId: origenId,
+            currentTime: horaInicioSegundos,
+            path: [], // Historial de tramos
+            cost: 0,   // Costo monetario acumulado
+            transfers: 0
+        }, horaInicioSegundos);
+
+        bestTimes.set(origenId, horaInicioSegundos);
+
+        let mejorRutaEncontrada = null;
+
+        // 3. Bucle Principal
+        while (!pq.isEmpty()) {
+            const current = pq.pop();
+            const { stopId, currentTime, path, cost, transfers } = current;
+
+            // Si llegamos al destino, verificamos si es la mejor ruta hasta ahora
+            // Nota: Como usamos Dijkstra por tiempo, la primera vez que sacamos el destino de la cola
+            // es garantizado que es la ruta más rápida.
+            if (stopId === destinoId) {
+                return this.construirResultado(current);
+            }
+
+            // Poda: Si ya hemos llegado a esta parada antes en un tiempo menor, descartar este camino
+            if (bestTimes.has(stopId) && bestTimes.get(stopId) < currentTime) {
+                continue;
+            }
+
+            // --- A. MOVERSE CAMINANDO A PARADAS CERCANAS (Transbordo a pie) ---
+            // Obtenemos paradas cercanas
+            const paradasCercanas = this.obtenerParadasCercanas(stopId);
+            
+            for (const p of paradasCercanas) {
+                const walkTime = Math.ceil((p.distanceKm * 1000) / this.WALK_SPEED_MPS);
+                const arrivalTime = currentTime + walkTime;
+
+                // Si mejora el tiempo de llegada a esa parada vecina
+                if (!bestTimes.has(p.id) || arrivalTime < bestTimes.get(p.id)) {
+                    bestTimes.set(p.id, arrivalTime);
+                    
+                    const newPath = [...path, {
+                        type: 'walk',
+                        from: stopId,
+                        to: p.id,
+                        duration: walkTime,
+                        startTime: currentTime,
+                        endTime: arrivalTime,
+                        distance: p.distanceKm
+                    }];
+
+                    pq.push({
+                        stopId: p.id,
+                        currentTime: arrivalTime,
+                        path: newPath,
+                        cost: cost,
+                        transfers: transfers // Caminar no cuenta como transbordo de vehículo
+                    }, arrivalTime);
+                }
+            }
+
+            // --- B. TOMAR UN TRANSPORTE DESDE AQUÍ ---
+            // Buscamos viajes que pasen por esta parada y salgan DESPUÉS de currentTime
+            const viajesPosibles = this.obtenerViajesDesdeParada(stopId, currentTime, fechaYYYYMMDD, diaSemanaField);
+
+            for (const viaje of viajesPosibles) {
+                // viaje tiene: trip_id, departure_time (segundos), arrival_time_destino (segundos), stop_destino, route, cost
+                
+                // Si mejora el tiempo a la parada destino de este tramo
+                if (!bestTimes.has(viaje.stopDestino) || viaje.arrivalTimeDestino < bestTimes.get(viaje.stopDestino)) {
+                    
+                    // Solo actualizamos si es significativamente mejor o es nuevo
+                    bestTimes.set(viaje.stopDestino, viaje.arrivalTimeDestino);
+
+                    const newPath = [...path, {
+                        type: 'transit',
+                        from: stopId,
+                        to: viaje.stopDestino,
+                        trip: viaje.trip,
+                        route: viaje.route,
+                        startTime: viaje.departureTime,
+                        endTime: viaje.arrivalTimeDestino,
+                        wait: viaje.departureTime - currentTime
+                    }];
+
+                    pq.push({
+                        stopId: viaje.stopDestino,
+                        currentTime: viaje.arrivalTimeDestino,
+                        path: newPath,
+                        cost: cost + (viaje.fare || 0),
+                        transfers: transfers + 1
+                    }, viaje.arrivalTimeDestino); // Prioridad: Tiempo de llegada
                 }
             }
         }
-        return candidates;
+
+        return null; // No se encontró ruta
     }
-}
-
-// --- 3. CLASE PRINCIPAL DEL SISTEMA ---
-
-class TransitEngine {
-    constructor() {
-        // Datos en memoria
-        this.stops = new Map();
-        this.routes = new Map();
-        this.trips = new Map();
-        this.stopTimesByTrip = new Map(); // TripID -> Array StopTime
-        this.stopTimesByStop = new Map(); // StopID -> Array StopTime (Ordenado por hora)
-        this.calendars = new Map();
-        
-        // Índices
-        this.spatialGrid = new SpatialGrid(1.0); // Celdas de 1km
-        
-        // Constantes Física/Lógica
-        this.WALK_SPEED_MPS = 1.1; // ~4 km/h
-        this.MAX_TRANSIT_SPEED_MPS = 25.0; // ~90 km/h (para heurística optimista)
-        this.CAR_SPEED_MPS = 11.1; // ~40 km/h (para primera milla)
-        this.TAXI_BASE_FARE = 5.0; // Costo base taxi
-        this.TAXI_KM_FARE = 2.0;   // Costo km taxi
-    }
-
-    // --- CARGA Y PREPROCESAMIENTO ---
 
     /**
-     * Carga datos masivos y realiza inferencias (Urbano vs Interurbano).
-     * @param {GTFSStop[]} stops 
-     * @param {GTFSRoute[]} routes 
-     * @param {GTFSTrip[]} trips 
-     * @param {GTFSStopTime[]} stopTimes 
-     * @param {GTFSCalendar[]} calendars 
+     * Obtiene paradas dentro del radio de caminata.
+     * Optimización: En un sistema real usaríamos un QuadTree o Grid, 
+     * aquí iteramos (la DB no es gigante) o usamos las precalculadas.
      */
-    loadData(stops, routes, trips, stopTimes, calendars) {
-        console.time("loadData");
+    obtenerParadasCercanas(currentStopId) {
+        const vecinos = [];
+        const currentStop = this.db.stops.get(currentStopId);
+        if (!currentStop) return [];
 
-        // 1. Cargar Paradas e Indexar Espacialmente
-        stops.forEach(s => {
-            // Asegurar tipos numéricos
-            s.stop_lat = Number(s.stop_lat);
-            s.stop_lon = Number(s.stop_lon);
-            this.stops.set(s.stop_id, s);
-            this.spatialGrid.addStop(s);
+        // Iterar sobre todas las paradas principales para ver cuales están cerca
+        // NOTA: Para producción con miles de paradas, esto debe optimizarse.
+        // Asumiendo < 500 paradas, esto es rápido en JS moderno.
+        this.db.paradasPrincipales.forEach(targetStop => {
+            if (targetStop.stop_id === currentStopId) return;
+
+            const dist = this.getDistanciaHaversine(
+                currentStop.stop_lat, currentStop.stop_lon,
+                targetStop.stop_lat, targetStop.stop_lon
+            );
+
+            if (dist <= this.MAX_WALK_DISTANCE_KM) {
+                vecinos.push({ id: targetStop.stop_id, distanceKm: dist });
+            }
+        });
+        return vecinos;
+    }
+
+    /**
+     * Busca en stop_times todos los viajes que salen de stopId después de time
+     */
+    obtenerViajesDesdeParada(stopId, minTime, fecha, diaSemana) {
+        const opciones = [];
+        
+        // Obtenemos los hijos (andenes) de la parada actual para buscar salidas
+        const andenes = this.db.paradasPadreHijas.get(stopId) || [stopId];
+        
+        // Recolectar todos los stop_times de salida desde esta ubicación
+        let salidas = [];
+        andenes.forEach(andenId => {
+            const st = this.db.stopTimesPorParada.get(andenId);
+            if (st) salidas = salidas.concat(st);
         });
 
-        // 2. Cargar Calendarios
-        calendars.forEach(c => this.calendars.set(c.service_id, c));
+        // Filtrar y procesar
+        for (const stOrigen of salidas) {
+            // 1. Chequeo rápido de validez de servicio (Fecha y Día)
+            // Para optimizar, esto debería estar cacheado, pero lo hacemos directo
+            if (!this.esServicioValido(stOrigen.trip_id, fecha, diaSemana)) continue;
 
-        // 3. Cargar Trips
-        trips.forEach(t => this.trips.set(t.trip_id, t));
+            const trip = this.db.trips.get(stOrigen.trip_id);
+            const route = this.db.routes.get(trip.route_id);
+            const tarifaInfo = this.db.tarifas.get(route.route_id);
+            const fare = tarifaInfo ? tarifaInfo.num : 0;
+            const freqs = this.db.frequencies.get(stOrigen.trip_id);
 
-        // 4. Cargar StopTimes y Ordenar
-        const tempByTrip = {};
-        const tempByStop = {};
+            // Manejo de Frecuencias vs Horario Fijo
+            let departureTimeSecs = -1;
 
-        stopTimes.forEach(st => {
-            // Pre-cálculo de segundos para evitar re-parsear strings miles de veces
-            st.arrival_sec = this.timeToSeconds(st.arrival_time);
-            st.departure_sec = this.timeToSeconds(st.departure_time);
-            st.stop_sequence = Number(st.stop_sequence);
+            if (freqs && freqs.length > 0) {
+                // Lógica de Frecuencia
+                // Encontrar el primer viaje disponible basado en la frecuencia que salga >= minTime
+                const stInicial = this.db.stopTimes.find(s => s.trip_id === stOrigen.trip_id && s.stop_sequence === 1);
+                const offset = this.aSegundos(stOrigen.departure_time) - this.aSegundos(stInicial.departure_time);
+                
+                for (const freq of freqs) {
+                    const startService = this.aSegundos(freq.start_time);
+                    const endService = this.aSegundos(freq.end_time);
+                    const headway = freq.headway_secs;
 
-            if (!tempByTrip[st.trip_id]) tempByTrip[st.trip_id] = [];
-            tempByTrip[st.trip_id].push(st);
+                    // Buscamos el siguiente slot: t + offset >= minTime
+                    let t = startService;
+                    // Avanzar t hasta que la salida sea válida
+                    while ((t + offset) < minTime && t < endService) {
+                        t += headway;
+                    }
 
-            if (!tempByStop[st.stop_id]) tempByStop[st.stop_id] = [];
-            tempByStop[st.stop_id].push(st);
-        });
-
-        // Guardar y ordenar
-        for (const tid in tempByTrip) {
-            // Ordenar por secuencia para recorrer el viaje
-            tempByTrip[tid].sort((a, b) => a.stop_sequence - b.stop_sequence);
-            this.stopTimesByTrip.set(tid, tempByTrip[tid]);
-        }
-
-        for (const sid in tempByStop) {
-            // Ordenar por hora de salida para Búsqueda Binaria
-            tempByStop[sid].sort((a, b) => a.departure_sec - b.departure_sec);
-            this.stopTimesByStop.set(sid, tempByStop[sid]);
-        }
-
-        // 5. INFERENCIA DE TIPOS DE RUTA (Lógica Híbrida)
-        // Calculamos la distancia total y promedio de la ruta para saber si es INTERURBANA
-        routes.forEach(r => {
-            let totalDist = 0;
-            let segments = 0;
-            
-            // Tomamos el primer viaje asociado para muestrear
-            // (En un sistema real, haríamos promedio de todos los shapes)
-            const sampleTrip = trips.find(t => t.route_id === r.route_id);
-            if (sampleTrip) {
-                const sts = this.stopTimesByTrip.get(sampleTrip.trip_id);
-                if (sts && sts.length > 1) {
-                    for (let i = 0; i < sts.length - 1; i++) {
-                        const s1 = this.stops.get(sts[i].stop_id);
-                        const s2 = this.stops.get(sts[i+1].stop_id);
-                        if (s1 && s2) {
-                            totalDist += this.haversine(s1.stop_lat, s1.stop_lon, s2.stop_lat, s2.stop_lon);
-                            segments++;
-                        }
+                    if ((t + offset) >= minTime && t < endService) {
+                        departureTimeSecs = t + offset;
+                        break; // Encontramos la salida más pronta en esta frecuencia
                     }
                 }
-            }
-
-            const avgDist = segments > 0 ? totalDist / segments : 0;
-            
-            // REGLA DE NEGOCIO: Interurbano si promedio > 5km o total > 10.5km
-            r.is_interurban = (avgDist > 5.0) || (totalDist > 10.5);
-            r.avg_stop_dist = avgDist;
-            
-            this.routes.set(r.route_id, r);
-        });
-
-        console.timeEnd("loadData");
-        console.log(`Datos cargados: ${stops.length} paradas, ${routes.length} rutas.`);
-    }
-
-    // --- ALGORITMO A* ---
-
-    /**
-     * Encuentra la mejor ruta usando A*.
-     * @param {number} originLat 
-     * @param {number} originLon 
-     * @param {number} destLat 
-     * @param {number} destLon 
-     * @param {string} startTimeStr "HH:MM:SS"
-     * @param {number} dateYYYYMMDD 
-     * @param {UserPreferences} prefs 
-     */
-    findPath(originLat, originLon, destLat, destLon, startTimeStr, dateYYYYMMDD, prefs) {
-        const startTimeSec = this.timeToSeconds(startTimeStr);
-        const dayOfWeekStr = this.getDayOfWeek(dateYYYYMMDD);
-
-        // 1. Encontrar nodos de inicio
-        // Usamos Grid para buscar paradas a distancia caminable
-        let startStops = this.findNearbyStops(originLat, originLon, prefs.maxWalkDist / 1000);
-        let endStops = this.findNearbyStops(destLat, destLon, prefs.maxWalkDist / 1000);
-
-        // --- FALLBACK MULTIMODAL (Primera Milla) ---
-        // Si no hay paradas cerca, buscar HUBS lejanos (ej. 10km) para taxi
-        let usedTaxiMode = false;
-        if (startStops.length === 0 && prefs.allowTaxi) {
-            console.warn("Sin paradas cercanas. Activando modo Taxi/Uber a Hub cercano.");
-            // Buscamos paradas en radio de 10km
-            startStops = this.findNearbyStops(originLat, originLon, 10.0);
-            usedTaxiMode = true;
-        }
-
-        if (startStops.length === 0 || endStops.length === 0) {
-            return { error: "No se encontraron paradas válidas cerca del origen o destino." };
-        }
-
-        // Estructuras A*
-        const gScore = new Map(); // Costo mínimo conocido
-        const openSet = new MinPriorityQueue();
-        const targetStopIds = new Set(endStops.map(e => e.stop.stop_id));
-
-        // Inicializar
-        startStops.forEach(startNode => {
-            // Calcular costo acceso (Taxi o Caminata)
-            let accessDist = startNode.dist; // km
-            let accessTime = 0;
-            let accessCost = 0;
-            let type = 'WALK';
-
-            if (usedTaxiMode && accessDist > (prefs.maxWalkDist / 1000)) {
-                type = 'CAR_RIDE_SHARE';
-                accessTime = (accessDist * 1000) / this.CAR_SPEED_MPS; 
-                accessCost = this.TAXI_BASE_FARE + (accessDist * this.TAXI_KM_FARE); 
             } else {
-                accessTime = (accessDist * 1000) / this.WALK_SPEED_MPS;
-            }
-
-            const initialG = this.calculateCost(accessTime, accessCost, 0, prefs);
-            const arrivalAtStop = startTimeSec + accessTime;
-            
-            // Heurística (Distancia directa al destino final)
-            const h = this.heuristic(startNode.stop.stop_lat, startNode.stop.stop_lon, destLat, destLon);
-
-            // Estado
-            const startState = {
-                stopId: startNode.stop.stop_id,
-                currentTime: arrivalAtStop,
-                totalCostMoney: accessCost,
-                transfers: 0,
-                path: [{
-                    type: type,
-                    fromStopId: "ORIGIN",
-                    toStopId: startNode.stop.stop_id,
-                    startTime: startTimeSec,
-                    endTime: arrivalAtStop,
-                    duration: accessTime,
-                    distance: accessDist,
-                    cost: accessCost,
-                    wait: 0,
-                    description: type === 'WALK' ? "Caminar a parada" : "Taxi a estación"
-                }],
-                gVal: initialG
-            };
-
-            gScore.set(startNode.stop.stop_id, initialG);
-            openSet.push(startState, initialG + h); // f = g + h
-        });
-
-        // Bucle Principal
-        while (!openSet.isEmpty()) {
-            const current = openSet.pop();
-            const { stopId, currentTime, totalCostMoney, transfers, path, gVal } = current;
-
-            // 1. Check Destino
-            if (targetStopIds.has(stopId)) {
-                const endStopInfo = endStops.find(e => e.stop.stop_id === stopId);
-                const walkTime = (endStopInfo.dist * 1000) / this.WALK_SPEED_MPS;
-                const finalTime = currentTime + walkTime;
-                
-                const finalPath = [...path, {
-                    type: 'WALK',
-                    fromStopId: stopId,
-                    toStopId: "DESTINATION",
-                    startTime: currentTime,
-                    endTime: finalTime,
-                    duration: walkTime,
-                    distance: endStopInfo.dist,
-                    cost: 0,
-                    wait: 0,
-                    description: "Caminar a destino final"
-                }];
-
-                return this.buildResult(finalPath, totalCostMoney, transfers);
-            }
-
-            // Poda: Si encontramos un camino mejor antes a este nodo, saltar
-            if (gScore.has(stopId) && gScore.get(stopId) < gVal) continue;
-
-            // --- EXPANDIR VECINOS ---
-
-            // A. VIAJES GTFS (Bus/Tren)
-            const stopTimes = this.stopTimesByStop.get(stopId) || [];
-            
-            // Búsqueda Binaria para encontrar primer viaje útil
-            const startIndex = this.binarySearchStopTime(stopTimes, currentTime);
-
-            for (let i = startIndex; i < stopTimes.length; i++) {
-                const stOrigin = stopTimes[i];
-
-                // Optimización: Si la espera es > 4 horas, asumimos que no es óptimo y cortamos
-                // (Excepto en interurbano donde las frecuencias son bajas, podríamos ajustar esto)
-                if ((stOrigin.departure_sec - currentTime) > 14400) break;
-
-                // Validar Servicio (Calendario)
-                if (!this.isValidService(stOrigin.trip_id, dateYYYYMMDD, dayOfWeekStr)) continue;
-
-                const trip = this.trips.get(stOrigin.trip_id);
-                const route = this.routes.get(trip.route_id);
-
-                // Lógica Buffer de Seguridad (Híbrida)
-                let minBuffer = 0;
-                // Si venimos de otro transporte...
-                if (path.length > 0 && path[path.length - 1].type === 'TRANSIT') {
-                    // Si la ruta a tomar es Interurbana, buffer grande. Si es urbana, pequeño.
-                    minBuffer = route.is_interurban ? 1800 : 300; // 30 min vs 5 min
-                }
-
-                if (stOrigin.departure_sec < (currentTime + minBuffer)) continue;
-
-                // Explorar a dónde va este viaje
-                const tripStopTimes = this.stopTimesByTrip.get(stOrigin.trip_id);
-                
-                // Iterar paradas futuras
-                // Empezamos desde la posición de esta parada + 1
-                const currentSeqIndex = tripStopTimes.findIndex(st => st.stop_sequence === stOrigin.stop_sequence);
-                
-                for (let j = currentSeqIndex + 1; j < tripStopTimes.length; j++) {
-                    const stDest = tripStopTimes[j];
-                    
-                    // Cálculos
-                    const rideTime = stDest.arrival_sec - stOrigin.departure_sec;
-                    const waitTime = stOrigin.departure_sec - currentTime;
-                    
-                    // Tarifa dinámica simulada según tipo de ruta
-                    // (Aquí iría la llamada a tabla de fare_attributes si existe)
-                    const fare = route.is_interurban ? 15.0 : 2.50; 
-                    
-                    const newCostG = this.calculateCost(rideTime + waitTime, fare, 1, prefs);
-                    const newG = gVal + newCostG;
-                    
-                    // Heurística al destino final
-                    const destStopObj = this.stops.get(stDest.stop_id);
-                    const newH = this.heuristic(destStopObj.stop_lat, destStopObj.stop_lon, destLat, destLon);
-
-                    // Relax
-                    if (!gScore.has(stDest.stop_id) || newG < gScore.get(stDest.stop_id)) {
-                        gScore.set(stDest.stop_id, newG);
-                        
-                        openSet.push({
-                            stopId: stDest.stop_id,
-                            currentTime: stDest.arrival_sec,
-                            totalCostMoney: totalCostMoney + fare,
-                            transfers: transfers + 1,
-                            gVal: newG,
-                            path: [...path, {
-                                type: 'TRANSIT',
-                                fromStopId: stopId,
-                                toStopId: stDest.stop_id,
-                                startTime: stOrigin.departure_sec,
-                                endTime: stDest.arrival_sec,
-                                duration: rideTime,
-                                distance: 0, // Se podría calcular exacto
-                                tripId: trip.trip_id,
-                                routeId: route.route_id,
-                                cost: fare,
-                                wait: waitTime,
-                                description: `Ruta ${route.route_short_name} (${route.is_interurban ? 'Inter' : 'Urb'})`
-                            }]
-                        }, newG + newH);
-                    }
+                // Horario Fijo
+                const dep = this.aSegundos(stOrigen.departure_time);
+                if (dep >= minTime) {
+                    departureTimeSecs = dep;
                 }
             }
 
-            // B. CAMINAR (Transbordo a pie)
-            // Solo si el último paso no fue caminata
-            const lastLeg = path[path.length - 1];
-            if (lastLeg.type !== 'WALK' && lastLeg.type !== 'CAR_RIDE_SHARE') {
-                const currentStop = this.stops.get(stopId);
-                // Buscar vecinos usando Spatial Grid (O(1))
-                const neighbors = this.spatialGrid.getNeighbors(currentStop.stop_lat, currentStop.stop_lon);
-                
-                for (const neighborId of neighbors) {
-                    if (neighborId === stopId) continue;
-                    
-                    const neighbor = this.stops.get(neighborId);
-                    const distKm = this.haversine(currentStop.stop_lat, currentStop.stop_lon, neighbor.stop_lat, neighbor.stop_lon);
-                    
-                    if (distKm <= (prefs.maxWalkDist / 1000)) {
-                        const walkTime = (distKm * 1000) / this.WALK_SPEED_MPS;
-                        const arrivalTime = currentTime + walkTime;
-                        
-                        // Costo de caminar (tiempo puro, gratis, sin penalización transfer)
-                        const newCostG = this.calculateCost(walkTime, 0, 0, prefs);
-                        const newG = gVal + newCostG;
+            if (departureTimeSecs !== -1) {
+                // Si encontramos una salida válida, buscamos a dónde nos lleva este viaje
+                // Buscamos todas las paradas POSTERIORES en este viaje
+                const paradasPosteriores = this.db.stopTimes.filter(st => 
+                    st.trip_id === stOrigen.trip_id && 
+                    st.stop_sequence > stOrigen.stop_sequence
+                );
 
-                        if (!gScore.has(neighborId) || newG < gScore.get(neighborId)) {
-                            gScore.set(neighborId, newG);
-                            
-                            openSet.push({
-                                stopId: neighborId,
-                                currentTime: arrivalTime,
-                                totalCostMoney: totalCostMoney,
-                                transfers: transfers,
-                                gVal: newG,
-                                path: [...path, {
-                                    type: 'WALK',
-                                    fromStopId: stopId,
-                                    toStopId: neighborId,
-                                    startTime: currentTime,
-                                    endTime: arrivalTime,
-                                    duration: walkTime,
-                                    distance: distKm,
-                                    cost: 0,
-                                    wait: 0,
-                                    description: `Caminar a ${neighbor.stop_name}`
-                                }]
-                            }, newG + this.heuristic(neighbor.stop_lat, neighbor.stop_lon, destLat, destLon));
-                        }
+                for (const stDestino of paradasPosteriores) {
+                    // Calcular tiempo llegada
+                    let arrivalTimeSecs = 0;
+                    
+                    if (freqs && freqs.length > 0) {
+                         // Recalcular basado en el departureTimeSecs que hallamos arriba
+                         // Diferencia entre stDestino y stOrigen
+                         const diff = this.aSegundos(stDestino.arrival_time) - this.aSegundos(stOrigen.departure_time);
+                         arrivalTimeSecs = departureTimeSecs + diff;
+                    } else {
+                        arrivalTimeSecs = this.aSegundos(stDestino.arrival_time);
                     }
+
+                    // Identificar la parada principal del destino (para el grafo)
+                    const stopDestinoObj = this.db.stops.get(stDestino.stop_id);
+                    const stopDestinoMainId = (stopDestinoObj.location_type === 0 && stopDestinoObj.parent_station) 
+                        ? stopDestinoObj.parent_station 
+                        : stDestino.stop_id;
+
+                    opciones.push({
+                        trip: trip,
+                        route: route,
+                        stopDestino: stopDestinoMainId,
+                        departureTime: departureTimeSecs,
+                        arrivalTimeDestino: arrivalTimeSecs,
+                        fare: fare
+                    });
                 }
             }
         }
-
-        return null; // No path found
+        return opciones;
     }
 
-    // --- HELPERS ---
-
-    /**
-     * Búsqueda Binaria O(log N)
-     * Encuentra índice del primer stop_time tal que departure >= targetTime
-     */
-    binarySearchStopTime(times, targetTime) {
-        let low = 0, high = times.length - 1, ans = times.length;
-        while (low <= high) {
-            let mid = Math.floor((low + high) / 2);
-            if (times[mid].departure_sec >= targetTime) {
-                ans = mid;
-                high = mid - 1;
-            } else {
-                low = mid + 1;
-            }
-        }
-        return ans;
-    }
-
-    /**
-     * Heurística Admisible (Optimista)
-     * Distancia Euclidiana / Velocidad Máxima del Sistema
-     */
-    heuristic(lat1, lon1, lat2, lon2) {
-        const distM = this.haversine(lat1, lon1, lat2, lon2) * 1000;
-        return distM / this.MAX_TRANSIT_SPEED_MPS;
-    }
-
-    /**
-     * Función de Costo Ponderada
-     */
-    calculateCost(timeSeconds, money, transfers, prefs) {
-        return (timeSeconds * prefs.weightTime) + 
-               (money * prefs.weightCost) + 
-               (transfers * prefs.weightTransfers);
-    }
-
-    findNearbyStops(lat, lon, radiusKm) {
-        const candidates = this.spatialGrid.getNeighbors(lat, lon);
-        const result = [];
-        candidates.forEach(id => {
-            const s = this.stops.get(id);
-            const d = this.haversine(lat, lon, s.stop_lat, s.stop_lon);
-            if (d <= radiusKm) result.push({ stop: s, dist: d });
-        });
-        return result.sort((a,b) => a.dist - b.dist);
-    }
-
-    isValidService(tripId, date, dayName) {
-        const trip = this.trips.get(tripId);
+    esServicioValido(tripId, fechaNum, diaSemanaStr) {
+        const trip = this.db.trips.get(tripId);
         if (!trip) return false;
-        const cal = this.calendars.get(trip.service_id);
+        const cal = this.db.calendar.get(trip.service_id);
         if (!cal) return false;
-        return (date >= cal.start_date && date <= cal.end_date && cal[dayName] === 1);
+
+        // Verificar rango de fechas
+        if (fechaNum < cal.start_date || fechaNum > cal.end_date) return false;
+        // Verificar día de la semana
+        if (cal[diaSemanaStr] !== 1) return false;
+
+        return true;
     }
 
-    // --- UTILS ---
+    construirResultado(finalNode) {
+        const pasos = [];
+        let totalFare = 0;
+        let monedas = new Set();
 
-    haversine(lat1, lon1, lat2, lon2) {
-        const R = 6371; 
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        // Procesar path
+        // path es un array de segmentos
+        finalNode.path.forEach(segment => {
+            if (segment.type === 'walk') {
+                pasos.push({
+                    tipo: 'caminata',
+                    origen: this.db.stops.get(segment.from).stop_name,
+                    destino: this.db.stops.get(segment.to).stop_name,
+                    horaSalida: this.segundosAHora(segment.startTime),
+                    horaLlegada: this.segundosAHora(segment.endTime),
+                    duracion: this.segundosAFormato(segment.duration),
+                    distancia: segment.distance.toFixed(2) + ' km',
+                    instruccion: `Camina ${segment.distance.toFixed(2)} km`
+                });
+            } else {
+                const tarifaInfo = this.db.tarifas.get(segment.route.route_id);
+                const precio = tarifaInfo ? tarifaInfo.num : 0;
+                const moneda = tarifaInfo ? tarifaInfo.moneda : 'Bs.';
+                
+                totalFare += precio;
+                monedas.add(moneda);
+
+                pasos.push({
+                    tipo: 'transporte',
+                    route: segment.route,
+                    trip: segment.trip,
+                    origen: this.db.stops.get(segment.from).stop_name,
+                    destino: this.db.stops.get(segment.to).stop_name,
+                    horaSalida: this.segundosAHora(segment.startTime),
+                    horaLlegada: this.segundosAHora(segment.endTime),
+                    duracion: this.segundosAFormato(segment.endTime - segment.startTime),
+                    espera: this.segundosAFormato(segment.wait),
+                    precio: `${precio} ${moneda}`,
+                    instruccion: `Toma la ruta ${segment.route.route_short_name} hacia ${segment.trip.trip_headsign}`
+                });
+            }
+        });
+
+        return {
+            pasos: pasos,
+            horaLlegada: this.segundosAHora(finalNode.currentTime),
+            horaSalida: this.segundosAHora(finalNode.path[0].startTime),
+            duracionTotal: this.segundosAFormato(finalNode.currentTime - finalNode.path[0].startTime),
+            costoTotal: totalFare > 0 ? `${totalFare.toFixed(2)} ${[...monedas].join('/')}` : "Gratis / Desconocido",
+            transbordos: finalNode.transfers
+        };
     }
 
-    timeToSeconds(timeStr) {
-        if (!timeStr) return 0;
-        const [h, m, s] = timeStr.split(':').map(Number);
+    // --- UTILIDADES ---
+    aSegundos(horaStr) {
+        if (!horaStr) return 0;
+        const [h, m, s] = horaStr.split(':').map(Number);
         return (h * 3600) + (m * 60) + (s || 0);
     }
 
-    secondsToTime(secs) {
-        const h = Math.floor(secs / 3600);
-        const m = Math.floor((secs % 3600) / 60);
-        const s = Math.floor(secs % 60);
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    segundosAHora(seg) {
+        let h = Math.floor(seg / 3600);
+        let m = Math.floor((seg % 3600) / 60);
+        let s = Math.floor(seg % 60);
+        // Manejo de horas > 24 (ej: 25:00)
+        return [
+            h.toString().padStart(2, '0'),
+            m.toString().padStart(2, '0'),
+            s.toString().padStart(2, '0')
+        ].join(':');
     }
 
-    getDayOfWeek(dateNum) {
-        const s = dateNum.toString();
-        const d = new Date(s.substring(0,4), parseInt(s.substring(4,6))-1, s.substring(6,8));
-        const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-        return days[d.getDay()];
+    segundosAFormato(seg) {
+        if (seg < 60) return `${seg} seg`;
+        const h = Math.floor(seg / 3600);
+        const m = Math.floor((seg % 3600) / 60);
+        if (h > 0) return `${h}h ${m}min`;
+        return `${m} min`;
     }
 
-    buildResult(path, totalCost, transfers) {
-        return {
-            segments: path,
-            departureTime: this.secondsToTime(path[0].startTime),
-            arrivalTime: this.secondsToTime(path[path.length-1].endTime),
-            totalTimeSeconds: path[path.length-1].endTime - path[0].startTime,
-            totalMoney: totalCost,
-            transfers: transfers
-        };
+    getDistanciaHaversine(lat1, lon1, lat2, lon2) {
+        const toRad = x => x * Math.PI / 180;
+        const R = 6371; // km
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 }
 
-// Exponer globalmente
-window.TransitEngine = TransitEngine;
+// Exportar para usar en el navegador
+window.TransportePlanificador = TransportePlanificador;
