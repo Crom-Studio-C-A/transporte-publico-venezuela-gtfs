@@ -1,3 +1,4 @@
+
 # Guía de Contribución para Open Transit Venezuela 🚍🇻🇪
 
 ¡Gracias por tu interés en contribuir a Open Transit Venezuela! 🎉
@@ -15,6 +16,7 @@ Lo mejor de todo es que **no necesitas ser programador** para ayudar. La parte m
     -   [Reportar Errores de Datos](https://www.google.com/search?q=%23reportar-errores-de-datos "null")
         
     -   [Mappers: Agregar o Editar Rutas (GTFS)](https://www.google.com/search?q=%23mappers-agregar-o-editar-rutas-gtfs "null")
+    - [Convertir de Open Street Maps a GTFS (Opción Fácil)](https://www.google.com/search?q=%23mappers-agregar-o-editar-rutas-gtfs "null")
         
 3.  [Guía de Estilo para Datos (GTFS)](https://www.google.com/search?q=%23-gu%C3%ADa-de-estilo-para-datos-gtfs "null")
     
@@ -68,6 +70,11 @@ Si te animas a meter las manos en la masa, la "carne" del proyecto está en los 
 -   Cualquier editor de texto plano (**VS Code**, **Notepad++**, Sublime Text).
     
 -   ⚠️ **Advertencia:** Si usas Excel o Google Sheets, ten mucho cuidado con el formato de las celdas (especialmente las fechas y horas), ya que pueden corromper el archivo al guardar. Siempre verifica el formato antes de subirlo.
+
+### Convertir de Open Street Maps a GTFS (Opción Fácil)
+Existe la posibilidad de convertir la información desde Open Street Maps (OSM) al GTFS de Open Transit Venezuela (OTV), para ello le recomendamos ir al siguiente [documento](https://github.com/Crom-Studio-C-A/transporte-publico-venezuela-gtfs/tree/main-web/convertidor), donde puede ver más información. 
+
+Creamos un pequeño archivo de Python, el cual permite convertir datos de GEOJSON a GTFS, pero se debe de usar con mucho cuidado, algunos datos se pueden duplicar. 
     
 
 ## 📏 Guía de Estilo para Datos (GTFS)
