@@ -104,55 +104,56 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
-        apiKey: "AIzaSyA8dT38OlL4DU5JHJVo4gDcwLl9Wo5sPUs",
-        authDomain: "crom-studio.firebaseapp.com",
-        projectId: "crom-studio",
-        storageBucket: "crom-studio.firebasestorage.app",
-        messagingSenderId: "794549641659",
-        appId: "1:794549641659:web:d690dd18a0e78ae405a49e",
-        measurementId: "G-WFCF5JW2NP"
+            apiKey: "AIzaSyA8dT38OlL4DU5JHJVo4gDcwLl9Wo5sPUs",
+            authDomain: "crom-studio.firebaseapp.com",
+            projectId: "crom-studio",
+            storageBucket: "crom-studio.firebasestorage.app",
+            messagingSenderId: "794549641659",
+            appId: "1:794549641659:web:d690dd18a0e78ae405a49e",
+            measurementId: "G-WFCF5JW2NP"
         };
 
-        // Inicializar Firebase solo si hay config (para evitar errores si copias y pegas sin configurar)
+        // Variables globales para la instancia
         let db = null;
         let auth = null;
-        
-        if (firebaseConfig.apiKey !== "AIzaSyA8dT38OlL4DU5JHJVo4gDcwLl9Wo5sPUs") {
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                // Autenticación anónima para poder escribir en la base de datos de forma segura
-                signInAnonymously(auth).then(() => {
-                    console.log("Firebase: Conectado anónimamente para telemetría.");
-                }).catch((error) => {
-                    console.error("Firebase Auth Error:", error);
-                });
 
-                // Exponer función de log globalmente
-                window.logToFirebase = async (collectionName, data) => {
-                    // Verificar consentimiento antes de enviar
-                    if (localStorage.getItem('telemetry_consent') !== 'granted') return;
-                    
-                    try {
-                        await addDoc(collection(db, collectionName), {
-                            ...data,
-                            timestamp: serverTimestamp(), // Hora exacta del servidor
-                            userAgent: navigator.userAgent, // Para saber si es movil o PC
-                            url: window.location.href
-                        });
-                        console.log(`Telemetría enviada a ${collectionName}`);
-                    } catch (e) {
-                        console.error("Error enviando telemetría:", e);
-                    }
-                };
-            } catch (e) {
-                console.error("Error inicializando Firebase:", e);
-            }
-        } else {
-            console.warn("Firebase no está configurado. Reemplaza 'firebaseConfig' en el código.");
-            window.logToFirebase = () => {}; // Función vacía para no romper el código
+        try {
+            // 1. Inicializar la App directamente
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            // 2. Autenticación Anónima (necesaria para escribir en Firestore si tienes reglas de seguridad)
+            signInAnonymously(auth).then(() => {
+                console.log("Firebase: Conectado anónimamente y listo.");
+            }).catch((error) => {
+                console.error("Firebase Auth Error:", error);
+            });
+
+            // 3. Función global para enviar datos (Protegida por consentimiento)
+            window.logToFirebase = async (collectionName, data) => {
+                // VERIFICACIÓN DE PRIVACIDAD: Si no hay permiso, no hace nada.
+                if (localStorage.getItem('telemetry_consent') !== 'granted') return;
+                
+                try {
+                    await addDoc(collection(db, collectionName), {
+                        ...data,
+                        timestamp: serverTimestamp(), // Hora del servidor (más fiable)
+                        userAgent: navigator.userAgent, 
+                        url: window.location.href
+                    });
+                    // console.log(`Telemetría enviada a ${collectionName}`); // Descomentar para depurar
+                } catch (e) {
+                    console.error("Error enviando telemetría:", e);
+                }
+            };
+            
+            console.log("Firebase: Módulo cargado correctamente.");
+
+        } catch (e) {
+            console.error("Error crítico inicializando Firebase:", e);
+            // Fallback para evitar que la app se rompa si Firebase falla
+            window.logToFirebase = () => {}; 
         }
     </script>
 
