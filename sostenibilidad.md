@@ -26,7 +26,7 @@ Para cumplir nuestra promesa de que **Open Transit Venezuela sea siempre 100% gr
     
 2.  **Servicios B2B (Empresas):** Ofrecemos a las agencias de transporte y entes gubernamentales herramientas avanzadas de gestión, paneles de control y análisis de datos de movilidad.
     
-3.  **Telemetría Anónima:** Recopilamos datos de búsqueda totalmente anónimos (ej. "Ruta más buscada: Maracaibo -> Caracas") para generar informes de movilidad que ayudan a planificar mejor el transporte en nuestras ciudades.
+3.  **Telemetría Anónima:** Recopilamos datos de búsqueda totalmente anónimos (ej. "Ruta más buscada: Maracaibo -> Caracas") para generar informes de movilidad que ayudan a planificar mejor el transporte en nuestras ciudades. No rastreamos la identidad de las personas, sino los patrones de la ciudad. Nuestros datos dicen '100 personas necesitan ir del punto A al B', nunca 'Juan Pérez va al punto B'.
     
 4.  **Donaciones y Contribuciones:** Aceptamos el apoyo de la comunidad, ya sea financiero o a través de código y datos, para acelerar el desarrollo.
     
