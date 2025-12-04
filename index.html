@@ -74,7 +74,7 @@
     <!-- ========================================== -->
     <!-- IMPORTAR EL NUEVO ALGORITMO                -->
     <!-- ========================================== -->
-    <script src="algoritmo.js"></script>
+    <script src="https://transporte.cromstudio.com.ve/algoritmo.js"></script>
 
     <!-- ========================================== -->
     <!-- TELEMETRÍA GOOGLE ANALYTICS (Gtag.js)      -->
@@ -93,6 +93,67 @@
       
       gtag('js', new Date());
       gtag('config', 'G-ZLR7GZW3KP');
+    </script>
+
+    <!-- ========================================== -->
+    <!-- FIREBASE SDK (MODULAR)                     -->
+    <!-- ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+        apiKey: "AIzaSyA8dT38OlL4DU5JHJVo4gDcwLl9Wo5sPUs",
+        authDomain: "crom-studio.firebaseapp.com",
+        projectId: "crom-studio",
+        storageBucket: "crom-studio.firebasestorage.app",
+        messagingSenderId: "794549641659",
+        appId: "1:794549641659:web:d690dd18a0e78ae405a49e",
+        measurementId: "G-WFCF5JW2NP"
+        };
+
+        // Inicializar Firebase solo si hay config (para evitar errores si copias y pegas sin configurar)
+        let db = null;
+        let auth = null;
+        
+        if (firebaseConfig.apiKey !== "AIzaSyA8dT38OlL4DU5JHJVo4gDcwLl9Wo5sPUs") {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Autenticación anónima para poder escribir en la base de datos de forma segura
+                signInAnonymously(auth).then(() => {
+                    console.log("Firebase: Conectado anónimamente para telemetría.");
+                }).catch((error) => {
+                    console.error("Firebase Auth Error:", error);
+                });
+
+                // Exponer función de log globalmente
+                window.logToFirebase = async (collectionName, data) => {
+                    // Verificar consentimiento antes de enviar
+                    if (localStorage.getItem('telemetry_consent') !== 'granted') return;
+                    
+                    try {
+                        await addDoc(collection(db, collectionName), {
+                            ...data,
+                            timestamp: serverTimestamp(), // Hora exacta del servidor
+                            userAgent: navigator.userAgent, // Para saber si es movil o PC
+                            url: window.location.href
+                        });
+                        console.log(`Telemetría enviada a ${collectionName}`);
+                    } catch (e) {
+                        console.error("Error enviando telemetría:", e);
+                    }
+                };
+            } catch (e) {
+                console.error("Error inicializando Firebase:", e);
+            }
+        } else {
+            console.warn("Firebase no está configurado. Reemplaza 'firebaseConfig' en el código.");
+            window.logToFirebase = () => {}; // Función vacía para no romper el código
+        }
     </script>
 
     <!-- CSS (Diseño "Super Moderno" v22) -->
@@ -1491,6 +1552,29 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
             function trackEvent(eventName, params = {}) {
                 if (localStorage.getItem('telemetry_consent') === 'granted') {
                     gtag('event', eventName, params);
+                    
+                    // --- NUEVO: Integración con Firebase Firestore ---
+                    // Si existe la función (definida en el script type=module), la usamos
+                    if (window.logToFirebase) {
+                        // Mapear eventos de GA4 a colecciones de Firestore
+                        if (eventName === 'select_route') {
+                            window.logToFirebase('vistas_ruta', {
+                                route_id: params.route_id,
+                                route_name: params.route_name
+                            });
+                        } else if (eventName === 'select_stop') {
+                            window.logToFirebase('vistas_parada', {
+                                stop_id: params.stop_id,
+                                stop_name: params.stop_name,
+                                source: params.source || 'lista'
+                            });
+                        } else if (eventName === 'search_trip') {
+                            window.logToFirebase('busquedas_viaje', {
+                                origin_id: params.origin_id,
+                                destination_id: params.destination_id
+                            });
+                        }
+                    }
                 }
             }
 
@@ -1936,7 +2020,7 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                         div.classList.add('active');
                         estadoApp.rutaActiva = route.route_id;
                         
-                        // TELEMETRÍA
+                        // TELEMETRÍA (GA4 + Firebase)
                         trackEvent('select_route', {
                             'route_id': route.route_id,
                             'route_name': route.route_long_name
@@ -2006,7 +2090,7 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                         div.classList.add('active');
                         estadoApp.paradaActiva = stop.stop_id; // Guardar ID de la ESTACIÓN
                         
-                        // TELEMETRÍA
+                        // TELEMETRÍA (GA4 + Firebase)
                         trackEvent('select_stop', {
                             'stop_id': stop.stop_id,
                             'stop_name': stop.stop_name
@@ -2565,7 +2649,7 @@ https://transporte.cromstudio.com.ve/data/frequencies.txt
                     return;
                 }
 
-                // TELEMETRÍA
+                // TELEMETRÍA (GA4 + Firebase)
                 trackEvent('search_trip', {
                     'origin_id': origenId,
                     'destination_id': destinoId
